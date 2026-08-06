@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VeerAlyze — Advanced AI YouTube Intelligence</title>
+    <meta name="description" content="The most advanced AI-powered YouTube video analyzer. Get viral scores, SEO, transcripts, growth predictions, AI coaching, and more.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="glow-blob blob-1"></div>
+    <div class="glow-blob blob-2"></div>
+    <div class="glow-blob blob-3"></div>
+
+    <!-- History Drawer -->
+    <div class="history-overlay" id="history-overlay"></div>
+    <div class="history-drawer" id="history-drawer">
+        <div class="history-drawer-header">
+            <h3><i class="fa-solid fa-clock-rotate-left"></i> Analysis History</h3>
+            <button class="history-close-btn" id="history-close-btn"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="history-list" id="history-list"></div>
+        <div class="history-empty" id="history-empty" style="display:none;">
+            <i class="fa-solid fa-folder-open"></i>
+            <p>No saved analyses yet.<br>Analyze a video to start.</p>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <header class="app-header">
+            <div class="logo">
+                <i class="fa-brands fa-youtube logo-icon"></i>
+                <h1>Veer<span>Alyze</span> <small class="ai-badge">Pro AI</small></h1>
+            </div>
+            <div class="header-actions">
+                <button class="header-btn" id="history-btn"><i class="fa-solid fa-clock-rotate-left"></i> History</button>
+                <button class="header-btn dashboard-btn hidden" id="dashboard-btn"><i class="fa-solid fa-chart-pie"></i> Dashboard</button>
+                <div class="api-status" id="api-status-badge"><span class="status-dot"></span> Checking...</div>
+                <div class="auth-widget" id="auth-widget">
+                    <button class="header-btn primary-auth-btn" id="auth-modal-btn"><i class="fa-solid fa-user"></i> <span id="auth-btn-text">Sign In</span></button>
+                    <div class="user-profile-menu hidden" id="user-profile-menu">
+                        <img id="user-avatar" src="https://ui-avatars.com/api/?name=User&background=a855f7&color=fff" alt="Avatar" class="user-avatar">
+                        <span id="user-name" class="user-name">User</span>
+                        <button class="icon-btn-danger" id="logout-btn" title="Sign Out"><i class="fa-solid fa-right-from-bracket"></i></button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="warning-banner hidden" id="api-key-warning">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <div><strong>Missing API Key:</strong> Add <code>GEMINI_API_KEY=your_key</code> to <code>.env</code> file and restart.</div>
+        </div>
+
+        <main class="main-content">
+
+            <!-- ═══ UPLOAD ═══ -->
+            <section class="card upload-section" id="upload-card">
+                <div class="card-header">
+                    <h2>Upload Video or Short</h2>
+                    <p>MP4, WebM supported (Max 1GB). All files deleted immediately after analysis.</p>
+                </div>
+                <div class="drop-zone" id="drop-zone">
+                    <input type="file" id="file-input" accept="video/mp4,video/webm" class="hidden">
+                    <div class="drop-zone-content">
+                        <div class="upload-icon-wrapper"><i class="fa-solid fa-cloud-arrow-up upload-icon"></i></div>
+                        <h3>Drag & Drop video here</h3>
+                        <p>or <span class="browse-btn">browse your computer</span></p>
+                        <span class="file-limits">Under 1 min for Shorts, under 5 min for videos recommended.</span>
+                    </div>
+                </div>
+                <!-- Thumbnail Analyzer -->
+                <div class="thumb-analyzer-section">
+                    <div class="thumb-analyzer-toggle" id="thumb-analyzer-toggle">
+                        <i class="fa-solid fa-image"></i>
+                        <span>Analyze an existing Thumbnail? <strong>Click to expand</strong></span>
+                        <i class="fa-solid fa-chevron-down toggle-icon"></i>
+                    </div>
+                    <div class="thumb-analyzer-body hidden" id="thumb-analyzer-body">
+                        <p class="thumb-hint">Upload your thumbnail image to get a CTR score, heatmap simulation, and improvement suggestions.</p>
+                        <div class="thumb-upload-row">
+                            <label for="thumbnail-file-input" class="thumb-upload-btn"><i class="fa-solid fa-upload"></i> Choose Image</label>
+                            <input type="file" id="thumbnail-file-input" accept="image/jpeg,image/png,image/webp" class="hidden">
+                            <span id="thumb-file-name" class="thumb-file-name">No file selected</span>
+                        </div>
+                        <button class="analyze-thumb-btn hidden" id="analyze-thumb-btn"><i class="fa-solid fa-magnifying-glass"></i> Analyze Thumbnail</button>
+                        <div class="thumb-loading hidden" id="thumb-loading"><div class="mini-spinner"></div> Analyzing...</div>
+                        <div class="thumb-result-box hidden" id="thumb-result-box"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ═══ PROCESSING ═══ -->
+            <section class="card processing-section hidden" id="processing-card">
+                <div class="processing-header">
+                    <div class="loader"><div class="spinner"></div></div>
+                    <h2>Running 16-Phase AI Analysis...</h2>
+                    <p>VeerAlyze AI is performing comprehensive analysis: visuals, audio, face expressions, speech, pacing, storytelling, and much more.</p>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar-glow"></div>
+                    <div class="progress-bar-fill" id="progress-fill" style="width:10%;"></div>
+                </div>
+                <div class="progress-text" id="progress-percentage">10%</div>
+                <div class="logs-container">
+                    <div class="logs-header">
+                        <span><i class="fa-solid fa-terminal"></i> Activity Log</span>
+                        <span class="pulse-indicator">Live</span>
+                    </div>
+                    <div class="logs-body" id="logs-body"></div>
+                </div>
+            </section>
+
+            <!-- ═══ RESULTS DASHBOARD ═══ -->
+            <section class="results-dashboard hidden" id="results-dashboard">
+
+                <!-- LEFT COLUMN -->
+                <div class="video-column">
+                    <div class="card preview-card">
+                        <h3><i class="fa-solid fa-circle-play"></i> Video Preview</h3>
+                        <div class="video-container"><video id="video-preview" controls></video></div>
+                        <div class="file-info-bar">
+                            <span id="file-name"><i class="fa-solid fa-file-video"></i> video.mp4</span>
+                            <span id="file-size">0.0 MB</span>
+                        </div>
+                    </div>
+
+                    <div class="card score-widget">
+                        <div class="score-radial">
+                            <svg viewBox="0 0 36 36" class="circular-chart">
+                                <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                <path class="circle" id="score-circle" stroke-dasharray="85,100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                <text x="18" y="20.35" class="percentage" id="score-text">8.5</text>
+                            </svg>
+                        </div>
+                        <div class="score-info">
+                            <h4>Overall Score</h4>
+                            <p>AI-calculated across 16 analysis dimensions.</p>
+                            <div class="potential-badge" id="potential-badge"><i class="fa-solid fa-chart-line"></i> Potential: <span id="potential-text">High</span></div>
+                        </div>
+                    </div>
+
+                    <div class="card viral-score-widget">
+                        <h4><i class="fa-solid fa-fire"></i> Viral Score Breakdown</h4>
+                        <div class="viral-scores-grid">
+                            <div class="viral-score-item"><div class="vscore-ring"><span id="vs-overall">0</span></div><span>Overall</span></div>
+                            <div class="viral-score-item"><div class="vscore-ring"><span id="vs-entertainment">0</span></div><span>Entertainment</span></div>
+                            <div class="viral-score-item"><div class="vscore-ring"><span id="vs-watchability">0</span></div><span>Watchability</span></div>
+                            <div class="viral-score-item"><div class="vscore-ring"><span id="vs-shareability">0</span></div><span>Shareability</span></div>
+                            <div class="viral-score-item"><div class="vscore-ring"><span id="vs-engagement">0</span></div><span>Engagement</span></div>
+                        </div>
+                    </div>
+
+                    <div class="card algo-widget">
+                        <h4><i class="fa-solid fa-robot"></i> YT Algorithm Audit</h4>
+                        <div class="algo-stats-grid">
+                            <div class="algo-stat">
+                                <span class="stat-label">CTR Potential</span>
+                                <div class="stat-bar-container"><div class="stat-bar-fill ctr-fill" id="algo-ctr-fill" style="width:0%"></div></div>
+                                <span class="stat-val" id="algo-ctr-val">0%</span>
+                            </div>
+                            <div class="algo-stat">
+                                <span class="stat-label">Hook Strength</span>
+                                <div class="stat-bar-container"><div class="stat-bar-fill hook-fill" id="algo-hook-fill" style="width:0%"></div></div>
+                                <span class="stat-val" id="algo-hook-val">0%</span>
+                            </div>
+                            <div class="algo-stat">
+                                <span class="stat-label">Retention Risk</span>
+                                <span class="stat-badge" id="algo-retention-val">-</span>
+                            </div>
+                        </div>
+                        <p class="algo-feedback" id="algo-feedback-text"></p>
+                        <div class="algo-detail-grid" id="algo-detail-grid"></div>
+                        <div class="algo-stage-list" id="algo-stage-list"></div>
+                        <ul class="suggestions-list algo-priority-list" id="algo-priority-list"></ul>
+                    </div>
+
+                    <div class="card badge-widget">
+                        <h4><i class="fa-solid fa-masks-theater"></i> Content Intelligence</h4>
+                        <div class="badge-grid" id="content-badges-grid"></div>
+                    </div>
+
+                    <!-- Quick Stats -->
+                    <div class="card quick-stats-widget">
+                        <h4><i class="fa-solid fa-gauge-high"></i> Quick Stats</h4>
+                        <div class="quick-stats-grid" id="quick-stats-grid"></div>
+                    </div>
+
+                    <div class="dashboard-actions">
+                        <button class="export-pdf-btn" id="export-pdf-btn"><i class="fa-solid fa-file-pdf"></i> Export PDF</button>
+                        <div class="export-row">
+                            <button class="export-btn-sm" id="export-json-btn"><i class="fa-solid fa-file-code"></i> JSON</button>
+                            <button class="export-btn-sm" id="export-txt-btn"><i class="fa-solid fa-file-lines"></i> TXT</button>
+                            <button class="export-btn-sm" id="export-srt-btn"><i class="fa-solid fa-closed-captioning"></i> SRT</button>
+                        </div>
+                        <button class="share-btn hidden" id="share-result-btn"><i class="fa-solid fa-share-nodes"></i> Share Results</button>
+                        <button class="youtube-publish-btn hidden" id="yt-publish-btn"><i class="fa-brands fa-youtube"></i> Publish to YouTube</button>
+                        <button class="new-analysis-btn" id="new-analysis-btn"><i class="fa-solid fa-rotate-left"></i> New Analysis</button>
+                    </div>
+                </div>
+
+                <!-- RIGHT COLUMN: 8 Tabs -->
+                <div class="results-column">
+                    <div class="tabs-nav" id="main-tabs-nav">
+                        <button class="tab-btn active" data-tab="tab-reviews"><i class="fa-solid fa-star"></i> Review</button>
+                        <button class="tab-btn" data-tab="tab-deep"><i class="fa-solid fa-brain"></i> Deep Audit</button>
+                        <button class="tab-btn" data-tab="tab-seo"><i class="fa-solid fa-tags"></i> SEO & Tags</button>
+                        <button class="tab-btn" data-tab="tab-growth"><i class="fa-solid fa-rocket"></i> Growth</button>
+                        <button class="tab-btn" data-tab="tab-script"><i class="fa-solid fa-pen-nib"></i> Script</button>
+                        <button class="tab-btn" data-tab="tab-intel"><i class="fa-solid fa-chart-bar"></i> Intel</button>
+                        <button class="tab-btn" data-tab="tab-chat"><i class="fa-solid fa-comments"></i> AI Coach Chat</button>
+                        <button class="tab-btn" data-tab="tab-upload"><i class="fa-solid fa-circle-arrow-up"></i> Upload</button>
+                    </div>
+
+                    <div class="tabs-content">
+
+                        <!-- TAB 1: REVIEW -->
+                        <div class="tab-panel active" id="tab-reviews">
+                            <div class="card panel-card">
+                                <h3>Visual Quality</h3><p class="feedback-text" id="feedback-visual"></p>
+                                <hr class="divider">
+                                <h3>Audio & Voiceover</h3><p class="feedback-text" id="feedback-audio"></p>
+                                <hr class="divider">
+                                <h3>Video Hook (First 3–10 sec)</h3><p class="feedback-text" id="feedback-hook"></p>
+                                <hr class="divider">
+                                <h3>Editing Style & Pacing</h3><p class="feedback-text" id="feedback-editing"></p>
+                                <hr class="divider">
+                                <h3 class="suggestions-title"><i class="fa-solid fa-wand-magic-sparkles"></i> Key Improvements</h3>
+                                <ul class="suggestions-list" id="suggestions-list"></ul>
+                            </div>
+
+                            <!-- Storytelling Analysis -->
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-book-open"></i> Storytelling Analysis</h3>
+                                <div class="storytelling-grid" id="storytelling-grid"></div>
+                                <p class="feedback-text" style="margin-top:0.75rem;" id="storytelling-arc"></p>
+                            </div>
+
+                            <!-- Pacing Analysis -->
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-gauge"></i> Pacing Analysis</h3>
+                                <div class="pacing-badge-row">
+                                    <span class="pacing-overall-badge" id="pacing-overall">–</span>
+                                    <span style="font-size:0.85rem;color:var(--text-muted);">Overall Pace</span>
+                                </div>
+                                <div class="broll-list" id="pacing-fast-list" style="margin-top:0.75rem;"></div>
+                                <div class="broll-list" id="pacing-slow-list" style="margin-top:0.5rem;"></div>
+                                <ul class="suggestions-list" style="margin-top:0.75rem;" id="pacing-recommendations"></ul>
+                            </div>
+
+                            <!-- Humor Analysis -->
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-face-laugh"></i> Humor Analysis</h3>
+                                <div class="hook-score-row">
+                                    <div class="hook-score-circle" id="humor-score-circle"><span id="humor-score-val">0</span><small>/100</small></div>
+                                    <div class="hook-score-info" id="humor-moments-list"></div>
+                                </div>
+                                <ul class="suggestions-list" style="margin-top:0.75rem;" id="humor-suggestions"></ul>
+                            </div>
+                        </div>
+
+                        <!-- TAB 2: DEEP ANALYSIS -->
+                        <div class="tab-panel" id="tab-deep">
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-bolt"></i> Hook Analyzer</h3>
+                                <div class="hook-score-row">
+                                    <div class="hook-score-circle" id="hook-score-circle"><span id="hook-score-val">0</span><small>/10</small></div>
+                                    <div class="hook-score-info">
+                                        <p><strong>Hook:</strong> <span id="hook-text"></span></p>
+                                        <p><strong>Retention:</strong> <span id="hook-retention-pred"></span></p>
+                                    </div>
+                                </div>
+                                <hr class="divider">
+                                <h4><i class="fa-solid fa-lightbulb"></i> Alternative Hooks</h4>
+                                <ul class="suggestions-list" id="hook-suggestions-list"></ul>
+                            </div>
+
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-face-smile-wink"></i> Face Expression Analyzer</h3>
+                                <div class="face-analysis-box" id="face-analysis-box"></div>
+                                <ul class="suggestions-list" style="margin-top:0.75rem;" id="face-suggestions"></ul>
+                            </div>
+
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-microphone-lines"></i> Voice Energy Analyzer</h3>
+                                <div class="voice-stats-row" id="voice-stats-row"></div>
+                                <div class="broll-list" style="margin-top:0.75rem;" id="monotone-sections-list"></div>
+                                <ul class="suggestions-list" style="margin-top:0.75rem;" id="voice-recommendations"></ul>
+                            </div>
+
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-wave-square"></i> Audience Retention Map</h3>
+                                <p class="section-hint">Predicted viewer drop-off points & engagement path.</p>
+                                <div class="retention-chart-container" style="margin: 1.25rem 0; position: relative;">
+                                    <svg viewBox="0 0 800 200" id="retention-svg-chart" style="width: 100%; height: 160px; background: rgba(3, 7, 18, 0.4); border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); padding: 8px;">
+                                        <!-- Grid Lines -->
+                                        <g stroke="rgba(255,255,255,0.04)" stroke-width="1">
+                                            <line x1="0" y1="50" x2="800" y2="50"></line>
+                                            <line x1="0" y1="100" x2="800" y2="100"></line>
+                                            <line x1="0" y1="150" x2="800" y2="150"></line>
+                                            <line x1="160" y1="0" x2="160" y2="200"></line>
+                                            <line x1="320" y1="0" x2="320" y2="200"></line>
+                                            <line x1="480" y1="0" x2="480" y2="200"></line>
+                                            <line x1="640" y1="0" x2="640" y2="200"></line>
+                                        </g>
+                                        <!-- Neon Gradient definitions -->
+                                        <defs>
+                                            <linearGradient id="retention-glow" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                <stop offset="0%" stop-color="#2dd4bf"></stop>
+                                                <stop offset="50%" stop-color="#8b5cf6"></stop>
+                                                <stop offset="100%" stop-color="#ec4899"></stop>
+                                            </linearGradient>
+                                            <linearGradient id="retention-fill" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.25"></stop>
+                                                <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0.0"></stop>
+                                            </linearGradient>
+                                        </defs>
+                                        <path d="" id="retention-curve-path" stroke="url(#retention-glow)" stroke-width="3" fill="none" stroke-linecap="round" style="filter: drop-shadow(0 0 6px rgba(139,92,246,0.6));"></path>
+                                        <path d="" id="retention-area-path" fill="url(#retention-fill)"></path>
+                                        <!-- Risk point markers -->
+                                        <g id="retention-markers-group"></g>
+                                    </svg>
+                                </div>
+                                <div class="retention-map" id="retention-map"></div>
+                            </div>
+
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-star"></i> Highlight & Replay Moments</h3>
+                                <h4 style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.5rem;">🌟 Highlight Moments</h4>
+                                <div class="broll-list" id="highlight-moments-list"></div>
+                                <hr class="divider">
+                                <h4 style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.5rem;">🔄 Replay Moments</h4>
+                                <div class="broll-list" id="replay-moments-list"></div>
+                            </div>
+
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-icons"></i> Meme Potential</h3>
+                                <div class="hook-score-row">
+                                    <div class="hook-score-circle" id="meme-score-circle"><span id="meme-score-val">0</span><small>/100</small></div>
+                                    <div class="broll-list" id="meme-clips-list"></div>
+                                </div>
+                            </div>
+
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-scissors"></i> Shorts Clip Generator</h3>
+                                <p class="section-hint">Best clips from this video for YouTube Shorts.</p>
+                                <div class="shorts-clips-list" id="shorts-clips-list"></div>
+                            </div>
+
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-chess"></i> Competitor Insights</h3>
+                                <p class="feedback-text" id="competitor-style"></p>
+                                <hr class="divider">
+                                <h4>Missing Elements</h4><ul class="suggestions-list" id="competitor-missing"></ul>
+                                <hr class="divider">
+                                <h4>Inspired Improvements</h4><ul class="suggestions-list" id="competitor-inspired"></ul>
+                            </div>
+
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-flask"></i> A/B Title Test</h3>
+                                <div class="ab-test-grid">
+                                    <div class="ab-card" id="ab-card-a"><div class="ab-label">Title A</div><p id="ab-title-a"></p></div>
+                                    <div class="ab-vs-badge">VS</div>
+                                    <div class="ab-card" id="ab-card-b"><div class="ab-label">Title B</div><p id="ab-title-b"></p></div>
+                                </div>
+                                <div class="ab-winner-box" id="ab-winner-box">
+                                    <span class="ab-winner-label">🏆 Predicted Winner:</span>
+                                    <span id="ab-winner-text"></span>
+                                </div>
+                                <p class="feedback-text" id="ab-reasoning"></p>
+                            </div>
+
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-mobile-screen"></i> Shorts Suitability</h3>
+                                <div class="shorts-check-row">
+                                    <div class="shorts-badge" id="shorts-badge">–</div>
+                                    <div>
+                                        <p class="feedback-text" id="shorts-reasoning"></p>
+                                        <p><strong>Recommended:</strong> <span id="shorts-duration"></span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TAB 3: SEO -->
+                        <div class="tab-panel" id="tab-seo">
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-heading"></i> High-CTR Titles</h3>
+                                <div class="titles-container" id="seo-titles"></div>
+                            </div>
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-align-left"></i> Optimized Descriptions (4 Variations)</h3>
+                                <div class="desc-tabs-nav" id="desc-tabs-nav">
+                                    <button class="desc-tab-btn active">Option 1</button>
+                                    <button class="desc-tab-btn">Option 2</button>
+                                    <button class="desc-tab-btn">Option 3</button>
+                                    <button class="desc-tab-btn">Option 4</button>
+                                </div>
+                                <div class="desc-tabs-content">
+                                    <textarea class="seo-textarea" id="seo-description" readonly></textarea>
+                                    <button class="copy-btn secondary" id="copy-desc-btn" style="margin-top:0.75rem;width:100%;justify-content:center;font-weight:600;">
+                                        <i class="fa-solid fa-copy"></i> Copy Description
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card panel-card">
+                                <div class="card-title-bar">
+                                    <h3><i class="fa-solid fa-hashtag"></i> Viral Hashtags</h3>
+                                    <span class="guide-badge" id="hashtag-limit-guide"></span>
+                                </div>
+                                <div class="tags-pill-container" id="seo-hashtags"></div>
+                                <hr class="divider">
+                                <div class="card-title-bar">
+                                    <h3><i class="fa-solid fa-tags"></i> Video Tags</h3>
+                                    <span class="guide-badge" id="tag-limit-guide"></span>
+                                </div>
+                                <div class="tags-pill-container secondary" id="seo-tags"></div>
+                            </div>
+                        </div>
+
+                        <!-- TAB 4: GROWTH -->
+                        <div class="tab-panel" id="tab-growth">
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-eye"></i> View Predictions</h3>
+                                <div class="prediction-grid">
+                                    <div class="pred-card worst"><i class="fa-solid fa-arrow-trend-down"></i><span class="pred-label">Worst Case</span><span class="pred-val" id="pred-worst"></span></div>
+                                    <div class="pred-card avg"><i class="fa-solid fa-minus"></i><span class="pred-label">Average</span><span class="pred-val" id="pred-avg"></span></div>
+                                    <div class="pred-card best"><i class="fa-solid fa-arrow-trend-up"></i><span class="pred-label">Best Case</span><span class="pred-val" id="pred-best"></span></div>
+                                </div>
+                                <p class="feedback-text" style="margin-top:1rem;" id="pred-reasoning"></p>
+                            </div>
+
+                            <!-- Engagement Prediction -->
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-thumbs-up"></i> Engagement Prediction</h3>
+                                <div class="engagement-grid" id="engagement-grid"></div>
+                                <p class="feedback-text" style="margin-top:0.75rem;" id="engagement-reasoning"></p>
+                            </div>
+
+                            <!-- Subscriber Growth -->
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-user-plus"></i> Subscriber Growth Forecast</h3>
+                                <div class="sub-growth-grid" id="sub-growth-grid"></div>
+                                <p class="feedback-text" style="margin-top:0.75rem;" id="sub-growth-reasoning"></p>
+                            </div>
+
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-calendar-check"></i> Upload Timing</h3>
+                                <div class="timing-grid">
+                                    <div class="timing-item"><i class="fa-solid fa-calendar-day"></i><span class="timing-label">Best Day</span><span class="timing-val" id="timing-day"></span></div>
+                                    <div class="timing-item"><i class="fa-solid fa-clock"></i><span class="timing-label">Best Time</span><span class="timing-val" id="timing-time"></span></div>
+                                </div>
+                                <div class="country-timing-grid" id="country-timing-grid"></div>
+                                <p class="feedback-text" style="margin-top:0.75rem;" id="timing-reasoning"></p>
+                            </div>
+
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-users"></i> Audience Prediction</h3>
+                                <div class="audience-row">
+                                    <div class="audience-primary"><span class="aud-label">Primary</span><span class="aud-val" id="aud-primary"></span></div>
+                                    <div class="audience-secondary"><span class="aud-label">Secondary</span><span class="aud-val" id="aud-secondary"></span></div>
+                                </div>
+                                <div class="tags-pill-container" id="aud-interests" style="margin-top:0.75rem;"></div>
+                                <p class="feedback-text" style="margin-top:0.75rem;" id="aud-profile"></p>
+                            </div>
+
+                            <!-- Content Calendar -->
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-calendar-week"></i> AI Content Calendar</h3>
+                                <p class="section-hint" id="calendar-consistency"></p>
+                                <div class="calendar-grid" id="calendar-grid"></div>
+                            </div>
+
+                            <!-- Series Planner -->
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-film"></i> Series Planner</h3>
+                                <div class="series-header" id="series-title-box"></div>
+                                <div class="episode-list" id="episode-list"></div>
+                                <hr class="divider">
+                                <h4>Sequel Ideas</h4>
+                                <ul class="suggestions-list" id="sequel-ideas-list"></ul>
+                            </div>
+
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-seedling"></i> Channel Growth Advisor</h3>
+                                <h4>Future Video Ideas</h4>
+                                <ul class="suggestions-list" id="growth-video-ideas"></ul>
+                                <hr class="divider">
+                                <h4>Content Strategy</h4>
+                                <p class="feedback-text" id="growth-strategy"></p>
+                            </div>
+                        </div>
+
+                        <!-- TAB 5: SCRIPT & EDITING -->
+                        <div class="tab-panel" id="tab-script">
+                            <div class="card panel-card">
+                                <div class="card-title-bar">
+                                    <h3><i class="fa-solid fa-microphone"></i> Transcript</h3>
+                                    <button class="copy-btn" onclick="copyRawText(document.getElementById('transcript-box').value)"><i class="fa-solid fa-copy"></i></button>
+                                </div>
+                                <textarea class="seo-textarea transcript-area" id="transcript-box" readonly></textarea>
+                            </div>
+
+                            <!-- Summary -->
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-file-lines"></i> Auto Summary</h3>
+                                <p class="feedback-text" id="short-summary"></p>
+                                <hr class="divider">
+                                <h4>Key Points</h4>
+                                <ul class="suggestions-list" id="key-points-list"></ul>
+                            </div>
+
+                            <div class="card panel-card">
+                                <div class="card-title-bar">
+                                    <h3><i class="fa-solid fa-list-ol"></i> Auto Chapters</h3>
+                                    <button class="copy-btn" id="copy-chapters-btn"><i class="fa-solid fa-copy"></i></button>
+                                </div>
+                                <div class="chapters-list" id="chapters-list"></div>
+                            </div>
+
+                            <div class="card panel-card">
+                                <div class="card-title-bar">
+                                    <h3><i class="fa-solid fa-pen-nib"></i> Viral Script Rewrite</h3>
+                                    <button class="copy-btn" onclick="copyRawText(document.getElementById('script-rewrite-box').value)"><i class="fa-solid fa-copy"></i></button>
+                                </div>
+                                <textarea class="seo-textarea script-area" id="script-rewrite-box" readonly></textarea>
+                            </div>
+
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-hand-pointer"></i> CTA Suggestions</h3>
+                                <ul class="suggestions-list" id="cta-list"></ul>
+                            </div>
+
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-film"></i> B-Roll Suggestions</h3>
+                                <div class="broll-list" id="broll-list"></div>
+                                <hr class="divider">
+                                <h3><i class="fa-solid fa-volume-high"></i> Sound Effects</h3>
+                                <div class="broll-list" id="sfx-list"></div>
+                            </div>
+
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-music"></i> Music Suggestion</h3>
+                                <div class="music-style-card" id="music-style-card"></div>
+                            </div>
+
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-closed-captioning"></i> Subtitle Highlights</h3>
+                                <div class="tags-pill-container" id="subtitle-highlights"></div>
+                                <hr class="divider">
+                                <h3><i class="fa-solid fa-clapperboard"></i> Scene Detection</h3>
+                                <div class="scene-list" id="scene-list"></div>
+                                <hr class="divider">
+                                <h3><i class="fa-solid fa-key-skeleton"></i> Key Frames</h3>
+                                <div class="scene-list" id="key-frames-list"></div>
+                            </div>
+
+                            <!-- AI Improvement Score -->
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-chart-line"></i> AI Improvement Score</h3>
+                                <div class="improvement-score-box" id="improvement-score-box"></div>
+                                <ul class="suggestions-list" style="margin-top:0.75rem;" id="improvement-changes-list"></ul>
+                                <p class="feedback-text" style="margin-top:0.75rem;" id="improvement-time"></p>
+                            </div>
+
+                            <!-- Silence Detector -->
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-volume-xmark"></i> Silence Detector</h3>
+                                <p class="section-hint" id="silence-estimate"></p>
+                                <div class="broll-list" id="silence-list"></div>
+                                <p class="feedback-text" style="margin-top:0.75rem;" id="silence-verdict"></p>
+                            </div>
+                        </div>
+
+                        <!-- TAB 6: VIDEO INTEL -->
+                        <div class="tab-panel" id="tab-intel">
+
+                            <!-- Niche Detector -->
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-crosshairs"></i> Niche Detector</h3>
+                                <div class="niche-grid" id="niche-grid"></div>
+                                <div class="tags-pill-container" id="niche-sub-tags" style="margin-top:0.75rem;"></div>
+                                <p class="feedback-text" style="margin-top:0.75rem;" id="niche-monetization-fit"></p>
+                            </div>
+
+                            <!-- Monetization Score -->
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-dollar-sign"></i> Monetization Score</h3>
+                                <div class="monetization-grid" id="monetization-grid"></div>
+                                <p class="feedback-text" style="margin-top:0.75rem;" id="monetization-reasoning"></p>
+                            </div>
+
+                            <!-- Sponsor Score -->
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-handshake"></i> Sponsor Opportunity Score</h3>
+                                <div class="hook-score-row">
+                                    <div class="hook-score-circle" id="sponsor-score-circle"><span id="sponsor-score-val">0</span><small>/100</small></div>
+                                    <div class="hook-score-info">
+                                        <p><strong>Brand Friendliness:</strong> <span id="sponsor-friendly"></span></p>
+                                        <p><strong>Potential Brands:</strong></p>
+                                        <div class="tags-pill-container" id="potential-brands" style="margin-top:0.25rem;"></div>
+                                    </div>
+                                </div>
+                                <p class="feedback-text" style="margin-top:0.75rem;" id="sponsor-reasoning"></p>
+                            </div>
+
+                            <!-- Copyright Risk -->
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-shield-halved"></i> Copyright Risk Detector</h3>
+                                <div class="risk-grid" id="copyright-grid"></div>
+                                <p class="feedback-text" style="margin-top:0.75rem;" id="copyright-verdict"></p>
+                            </div>
+
+                            <!-- Community Guideline -->
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-flag"></i> Community Guideline Risk</h3>
+                                <div class="cg-risk-box" id="cg-risk-box"></div>
+                                <ul class="suggestions-list" id="cg-concerns-list" style="margin-top:0.75rem;"></ul>
+                                <p class="feedback-text" style="margin-top:0.75rem;" id="cg-verdict"></p>
+                            </div>
+
+                            <!-- Visual Quality Detail -->
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-camera"></i> Visual Quality Detailed</h3>
+                                <div class="visual-quality-grid" id="visual-quality-grid"></div>
+                                <hr class="divider">
+                                <h4><i class="fa-solid fa-video"></i> Camera Movement</h4>
+                                <p class="feedback-text" id="camera-stability"></p>
+                                <div class="broll-list" style="margin-top:0.5rem;" id="camera-movements-list"></div>
+                                <ul class="suggestions-list" style="margin-top:0.5rem;" id="camera-recommendations"></ul>
+                                <hr class="divider">
+                                <h4><i class="fa-solid fa-tree-city"></i> Background Analysis</h4>
+                                <div class="broll-list" id="background-distractions-list"></div>
+                                <p class="feedback-text" style="margin-top:0.5rem;" id="background-suggestions"></p>
+                            </div>
+
+                            <!-- Editing Style -->
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-sliders"></i> Editing Style Analyzer</h3>
+                                <div class="editing-style-box" id="editing-style-box"></div>
+                                <div class="tags-pill-container" id="editing-characteristics" style="margin-top:0.75rem;"></div>
+                                <ul class="suggestions-list" style="margin-top:0.75rem;" id="editing-alternatives"></ul>
+                            </div>
+
+                            <!-- Similar Creators -->
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-people-arrows"></i> Similar Creator Analysis</h3>
+                                <div class="creators-list" id="creators-list"></div>
+                                <hr class="divider">
+                                <h4>Your Differentiator</h4>
+                                <p class="feedback-text" id="creator-differentiator"></p>
+                                <h4 style="margin-top:0.5rem;">Competitive Edge</h4>
+                                <p class="feedback-text" id="creator-edge"></p>
+                            </div>
+
+                            <!-- Trending & Future -->
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-arrow-trend-up"></i> Trending Topic Analysis</h3>
+                                <div class="tags-pill-container" id="matching-trends" style="margin-bottom:0.75rem;"></div>
+                                <ul class="suggestions-list" id="trend-opportunities"></ul>
+                                <hr class="divider">
+                                <h3><i class="fa-solid fa-crystal-ball"></i> Future Trend Prediction</h3>
+                                <p class="section-hint" id="trend-timeframe"></p>
+                                <div class="tags-pill-container" id="upcoming-topics" style="margin-bottom:0.75rem;"></div>
+                                <ul class="suggestions-list" id="future-content-ideas"></ul>
+                            </div>
+
+                            <!-- Audio Quality Detailed -->
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-headphones"></i> Audio Quality Report</h3>
+                                <div class="audio-quality-grid" id="audio-quality-grid"></div>
+                                <ul class="suggestions-list" style="margin-top:0.75rem;" id="audio-recommendations"></ul>
+                            </div>
+                        </div>
+
+                        <!-- TAB 7: AI CHAT -->
+                        <div class="tab-panel" id="tab-chat">
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-robot"></i> AI Video Coach Report</h3>
+                                <div class="coach-assessment-box" id="coach-assessment-box"></div>
+                                <hr class="divider">
+                                <h4>Top Mistakes (Explained Simply)</h4>
+                                <ul class="suggestions-list" id="coach-mistakes-list"></ul>
+                                <hr class="divider">
+                                <h4>Step-by-Step Improvement Plan</h4>
+                                <div class="improvement-plan-list" id="improvement-plan-list"></div>
+                                <div class="coach-encouragement" id="coach-encouragement"></div>
+                            </div>
+
+                            <!-- Chat Widget -->
+                            <div class="card panel-card chat-card">
+                                <h3><i class="fa-solid fa-comments"></i> Chat With Your Video</h3>
+                                <p class="section-hint">Ask anything about your video. Get AI-powered, timestamp-based answers.</p>
+                                <div class="chat-suggestions-row">
+                                    <button class="chat-suggest-btn" data-msg="Why did this video perform poorly?">Why poor performance?</button>
+                                    <button class="chat-suggest-btn" data-msg="How can I increase watch time?">Increase watch time?</button>
+                                    <button class="chat-suggest-btn" data-msg="Which part should I cut?">What to cut?</button>
+                                    <button class="chat-suggest-btn" data-msg="Which part is most engaging?">Most engaging part?</button>
+                                    <button class="chat-suggest-btn" data-msg="What should I upload next?">What to upload next?</button>
+                                    <button class="chat-suggest-btn" data-msg="Give me a complete improvement plan.">Full improvement plan</button>
+                                </div>
+                                <div class="chat-messages" id="chat-messages">
+                                    <div class="chat-msg ai-msg">
+                                        <div class="chat-avatar"><i class="fa-solid fa-robot"></i></div>
+                                        <div class="chat-bubble">Hi! I've analyzed your video. Ask me anything about it — performance, editing, growth strategies, or specific timestamps! 🎬</div>
+                                    </div>
+                                </div>
+                                <div class="chat-input-row">
+                                    <input type="text" class="chat-input" id="chat-input" placeholder="Ask about your video..." maxlength="500">
+                                    <button class="chat-send-btn" id="chat-send-btn"><i class="fa-solid fa-paper-plane"></i></button>
+                                </div>
+                            </div>
+
+                            <!-- AI Content Advisor -->
+                            <div class="card panel-card">
+                                <h3><i class="fa-solid fa-lightbulb"></i> AI Content Advisor</h3>
+                                <p class="section-hint">Ask strategic questions about growing your channel.</p>
+                                <div class="advisor-quick-qa" id="advisor-quick-qa">
+                                    <!-- Filled from aiVideoCoach data -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TAB 8: CHANNEL -->
+                        <div class="tab-panel" id="tab-channel">
+                            <div class="card panel-card channel-connect-card" id="channel-connect-card">
+                                <div class="channel-connect-copy">
+                                    <h3><i class="fa-brands fa-youtube"></i> YouTube Account</h3>
+                                    <p class="section-hint">Link your channel to see real videos, Shorts, stats, and channel-level AI advice.</p>
+                                </div>
+                                <div class="channel-connect-actions">
+                                    <button class="new-analysis-btn download-accent" id="channel-link-btn"><i class="fa-brands fa-youtube"></i> Link Account</button>
+                                    <button class="new-analysis-btn" id="channel-refresh-btn"><i class="fa-solid fa-rotate"></i> Refresh</button>
+                                    <button class="new-analysis-btn" id="channel-disconnect-btn"><i class="fa-solid fa-link-slash"></i> Disconnect</button>
+                                </div>
+                                <p class="channel-status-text" id="channel-status-text">Not linked yet.</p>
+                            </div>
+
+                            <div class="card panel-card channel-summary-card hidden" id="channel-summary-card">
+                                <div class="channel-hero-row">
+                                    <img class="channel-avatar" id="channel-avatar" src="" alt="Channel avatar">
+                                    <div class="channel-hero-info">
+                                        <h3 id="channel-title">Your Channel</h3>
+                                        <p id="channel-description"></p>
+                                        <a id="channel-public-link" href="#" target="_blank" class="channel-public-link"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open Channel</a>
+                                    </div>
+                                </div>
+                                <div class="channel-metrics-grid" id="channel-metrics-grid"></div>
+                                <div class="channel-insight-strip" id="channel-insight-strip"></div>
+                            </div>
+
+                            <div class="card panel-card hidden" id="channel-videos-card">
+                                <div class="card-title-bar">
+                                    <h3><i class="fa-solid fa-video"></i> Videos & Shorts</h3>
+                                    <span class="guide-badge" id="channel-fetch-count"></span>
+                                </div>
+                                <div class="channel-videos-list" id="channel-videos-list"></div>
+                            </div>
+
+                            <div class="card panel-card chat-card hidden" id="channel-chat-card">
+                                <h3><i class="fa-solid fa-comments"></i> Chat With Your Channel</h3>
+                                <p class="section-hint">Ask about your real channel data, best videos, weak videos, Shorts strategy, and upload plan.</p>
+                                <div class="chat-suggestions-row channel-suggestions-row">
+                                    <button class="channel-chat-suggest-btn" data-msg="Mere channel ki sabse badi weakness kya hai?">Main weakness?</button>
+                                    <button class="channel-chat-suggest-btn" data-msg="Kaunse videos/shorts best perform kar rahe hain aur kyu?">Best performers?</button>
+                                    <button class="channel-chat-suggest-btn" data-msg="Next 10 video ideas do mere channel ke data ke hisab se.">Next ideas</button>
+                                    <button class="channel-chat-suggest-btn" data-msg="Mere channel ke liye 30 day growth plan banao.">30 day plan</button>
+                                </div>
+                                <div class="chat-messages" id="channel-chat-messages">
+                                    <div class="chat-msg ai-msg">
+                                        <div class="chat-avatar"><i class="fa-solid fa-robot"></i></div>
+                                        <div class="chat-bubble">Channel link hone ke baad main real stats ke basis par answer dunga.</div>
+                                    </div>
+                                </div>
+                                <div class="chat-input-row">
+                                    <input type="text" class="chat-input" id="channel-chat-input" placeholder="Ask about your channel..." maxlength="500">
+                                    <button class="chat-send-btn" id="channel-chat-send-btn"><i class="fa-solid fa-paper-plane"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TAB 9: UPLOAD STRATEGY -->
+                        <div class="tab-panel" id="tab-upload">
+                            <div class="card panel-card" style="margin-bottom:1.5rem;">
+                                <h3><i class="fa-solid fa-wand-magic-sparkles"></i> AI Generated Thumbnail</h3>
+                                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.5rem;">Generated based on your video content to maximize CTR.</p>
+                                <div class="thumbnail-preview-wrapper" id="thumbnail-wrapper" style="margin-bottom:1rem;">
+                                    <img id="thumbnail-img" src="" alt="AI Thumbnail" style="width:100%;border-radius:10px;display:block;">
+                                </div>
+                                <div style="display:flex;gap:1rem;">
+                                    <a id="thumbnail-download-link" href="" class="new-analysis-btn" style="flex:1;background:var(--primary-glow);border-color:var(--primary-glow);text-decoration:none;color:white;display:flex;align-items:center;justify-content:center;font-weight:600;">
+                                        <i class="fa-solid fa-download"></i> Download
+                                    </a>
+                                    <a id="thumbnail-external-link" href="" target="_blank" class="new-analysis-btn" style="flex:1;text-decoration:none;display:flex;align-items:center;justify-content:center;font-weight:600;">
+                                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Full Size
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="card panel-card">
+                                <div class="strategy-row">
+                                    <div class="strategy-col"><h4><i class="fa-solid fa-clock"></i> Best Time</h4><p id="strategy-time"></p></div>
+                                    <div class="strategy-col"><h4><i class="fa-solid fa-users"></i> Audience</h4><p id="strategy-audience"></p></div>
+                                </div>
+                                <hr class="divider">
+                                <h3><i class="fa-solid fa-image"></i> Thumbnail Concept</h3>
+                                <div class="thumbnail-concept-box"><p id="strategy-thumbnail"></p></div>
+                                <hr class="divider">
+                                <h3><i class="fa-solid fa-list-check"></i> Upload Checklist</h3>
+                                <ul class="checklist" id="strategy-steps"></ul>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div class="toast hidden" id="toast"><i class="fa-solid fa-circle-check"></i> Copied!</div>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!--  AI EDIT STUDIO MODAL                                               -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <div class="studio-overlay hidden" id="studio-overlay"></div>
+    <div class="studio-modal hidden" id="studio-modal">
+
+        <!-- Studio Sidebar -->
+        <aside class="studio-sidebar">
+            <div class="studio-logo">
+                <div class="studio-logo-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                <div>
+                    <div class="studio-logo-name">VEERALYZW</div>
+                </div>
+            </div>
+            <nav class="studio-nav">
+                <button class="studio-nav-btn active" data-studio-tab="studio-home"><i class="fa-solid fa-chart-line"></i> Analyze</button>
+                <button class="studio-nav-btn" data-studio-tab="studio-ideas"><i class="fa-solid fa-lightbulb"></i> Ideas</button>
+                <button class="studio-nav-btn studio-active-nav" data-studio-tab="studio-edit"><i class="fa-solid fa-wand-magic-sparkles"></i> Studio</button>
+                <button class="studio-nav-btn" data-studio-tab="studio-optimize"><i class="fa-solid fa-bolt"></i> Optimize</button>
+                <button class="studio-nav-btn" data-studio-tab="studio-resources"><i class="fa-solid fa-folder"></i> Resources</button>
+            </nav>
+            <div class="studio-credits-box">
+                <div class="studio-credits-header"><i class="fa-solid fa-bolt"></i> Studio Credits</div>
+                <div class="studio-credits-row" style="display:flex; align-items:baseline; gap:6px; margin-bottom:0.5rem;">
+                    <i class="fa-solid fa-bolt" style="color:#fbbf24; font-size:1rem; margin-right:2px;"></i>
+                    <span class="studio-credits-val" id="studio-credits-val" style="font-size:1.5rem; font-weight:900; color:white; line-height:1;">20</span>
+                    <span class="studio-credits-label" style="font-size:0.75rem; color:rgba(255,255,255,0.35);">/ 20 credits left</span>
+                </div>
+                <div class="studio-credits-bar"><div class="studio-credits-fill" id="studio-credits-fill"></div></div>
+            </div>
+            <div class="studio-user-row" style="display:flex; align-items:center; width:100%;">
+                <div class="studio-user-avatar">VZ</div>
+                <div class="studio-user-info">
+                    <span class="studio-user-name">Veeralyzw</span>
+                    <span class="studio-user-badge">Pro</span>
+                </div>
+                <i class="fa-solid fa-chevron-down" style="margin-left: auto; font-size: 0.7rem; color: rgba(255,255,255,0.35);"></i>
+            </div>
+        </aside>
+
+        <!-- Studio Main -->
+        <div class="studio-main">
+
+            <!-- Studio Header -->
+            <div class="studio-header">
+                <div class="studio-header-left">
+                    <h2 class="studio-title">AI EDIT <span>STUDIO</span><span class="studio-title-star">✦</span></h2>
+                    <p class="studio-subtitle">Describe. Generate. Wow.</p>
+                </div>
+                <div class="studio-header-right">
+                    <button class="studio-inspiration-btn" id="studio-inspiration-btn"><i class="fa-solid fa-lightbulb"></i> Inspiration</button>
+                    <div class="studio-credits-pill">
+                        <i class="fa-solid fa-bolt" style="color:#fbbf24;"></i>
+                        <span id="studio-credits-pill-val">20</span>
+                        <span class="studio-add-credits-btn">+</span>
+                    </div>
+                    <button class="studio-close-btn" id="studio-close-btn"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            </div>
+
+            <!-- Studio Body -->
+            <div class="studio-body">
+
+                <!-- Left Panel: Prompt + Examples + How it works -->
+                <div class="studio-left-panel">
+
+                    <!-- Tab panels -->
+                    <div class="studio-tab-panels">
+
+                        <!-- HOME / MAIN -->
+                        <div class="studio-tab-panel active" id="studio-home">
+                            <div class="studio-prompt-section">
+                                <p class="studio-section-label">WHAT DO YOU WANT TO CREATE?</p>
+                                <div class="studio-prompt-box">
+                                    <div class="studio-prompt-sparkle"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                                    <textarea class="studio-prompt-textarea" id="studio-prompt-textarea" placeholder="I want a powerful motivational short with fast cuts, glitch effects, beat sync and strong text animations."></textarea>
+                                    <div class="studio-prompt-actions" style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+                                        <button class="studio-voice-btn" id="studio-voice-btn" title="Voice input"><i class="fa-solid fa-microphone"></i></button>
+                                        <button class="studio-generate-btn" id="studio-generate-btn"><i class="fa-solid fa-arrow-right"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="studio-examples-section">
+                                <div class="studio-examples-header">
+                                    <span class="studio-section-label">TRY THESE EXAMPLES</span>
+                                    <button class="studio-refresh-examples" id="studio-refresh-examples"><i class="fa-solid fa-rotate"></i></button>
+                                </div>
+                                <div class="studio-examples-grid" id="studio-examples-grid">
+                                    <button class="studio-example-chip" data-prompt="Cinematic travel edit with drone shots, color graded warm tones, slow motion moments and epic music"><i class="fa-solid fa-film"></i> Cinematic travel edit</button>
+                                    <button class="studio-example-chip" data-prompt="Gaming highlight edit with reaction cuts, fast pace, epic sound effects and trending meme overlays"><i class="fa-solid fa-gamepad"></i> Gaming highlight edit</button>
+                                    <button class="studio-example-chip" data-prompt="Calm aesthetic edit with gentle transitions, soft music, pastel color grade and minimal text"><i class="fa-solid fa-leaf"></i> Calm aesthetic edit</button>
+                                    <button class="studio-example-chip" data-prompt="Funny meme edit with zooms, sound effects, reaction cuts and viral meme formats"><i class="fa-solid fa-face-laugh"></i> Funny meme edit</button>
+                                </div>
+                            </div>
+
+                            <div class="studio-how-it-works">
+                                <p class="studio-section-label">HOW IT WORKS</p>
+                                <div class="studio-steps-row">
+                                    <div class="studio-step">
+                                        <div class="studio-step-icon"><i class="fa-solid fa-pen"></i></div>
+                                        <div class="studio-step-num">1. Describe</div>
+                                        <div class="studio-step-sub">Tell us what you imagine</div>
+                                    </div>
+                                    <div class="studio-step-line"></div>
+                                    <div class="studio-step">
+                                        <div class="studio-step-icon"><i class="fa-solid fa-list-check"></i></div>
+                                        <div class="studio-step-num">2. AI Plan</div>
+                                        <div class="studio-step-sub">AI creates the perfect plan</div>
+                                    </div>
+                                    <div class="studio-step-line"></div>
+                                    <div class="studio-step studio-step-active">
+                                        <div class="studio-step-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                                        <div class="studio-step-num">3. Magic Happens</div>
+                                        <div class="studio-step-sub">We edit with effects, transitions &amp; more</div>
+                                    </div>
+                                    <div class="studio-step-line"></div>
+                                    <div class="studio-step">
+                                        <div class="studio-step-icon"><i class="fa-solid fa-eye"></i></div>
+                                        <div class="studio-step-num">4. Preview</div>
+                                        <div class="studio-step-sub">Watch your edit come alive</div>
+                                    </div>
+                                    <div class="studio-step-line"></div>
+                                    <div class="studio-step">
+                                        <div class="studio-step-icon"><i class="fa-solid fa-share-from-square"></i></div>
+                                        <div class="studio-step-num">5. Export</div>
+                                        <div class="studio-step-sub">Download and share anywhere</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- IDEAS TAB -->
+                        <div class="studio-tab-panel" id="studio-ideas">
+                            <div class="studio-ideas-content">
+                                <h3 class="studio-ideas-title"><i class="fa-solid fa-lightbulb"></i> Edit Ideas</h3>
+                                <p class="studio-ideas-sub">Based on your video analysis, here are AI-recommended edit styles:</p>
+                                <div class="studio-ideas-grid" id="studio-ideas-grid"></div>
+                            </div>
+                        </div>
+
+                        <!-- OPTIMIZE TAB -->
+                        <div class="studio-tab-panel" id="studio-optimize">
+                            <div class="studio-optimize-content">
+                                <h3 class="studio-ideas-title"><i class="fa-solid fa-bolt"></i> Optimization Tips</h3>
+                                <div class="studio-optimize-list" id="studio-optimize-list"></div>
+                            </div>
+                        </div>
+
+                        <!-- RESOURCES TAB -->
+                        <div class="studio-tab-panel" id="studio-resources">
+                            <div class="studio-resources-content">
+                                <h3 class="studio-ideas-title"><i class="fa-solid fa-folder"></i> Resources</h3>
+                                <div class="studio-resources-grid">
+                                    <a class="studio-resource-card" href="https://www.capcut.com" target="_blank"><i class="fa-solid fa-scissors"></i><span>CapCut</span></a>
+                                    <a class="studio-resource-card" href="https://www.adobe.com/products/premiere.html" target="_blank"><i class="fa-solid fa-film"></i><span>Premiere Pro</span></a>
+                                    <a class="studio-resource-card" href="https://www.davinciresolve.com" target="_blank"><i class="fa-solid fa-palette"></i><span>DaVinci Resolve</span></a>
+                                    <a class="studio-resource-card" href="https://www.epidemicsound.com" target="_blank"><i class="fa-solid fa-music"></i><span>Epidemic Sound</span></a>
+                                    <a class="studio-resource-card" href="https://pixabay.com/music" target="_blank"><i class="fa-solid fa-headphones"></i><span>Free Music</span></a>
+                                    <a class="studio-resource-card" href="https://www.pexels.com/videos" target="_blank"><i class="fa-solid fa-video"></i><span>Free B-Roll</span></a>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Right Panel: AI Orbit + Result -->
+                <div class="studio-right-panel">
+                    <div class="studio-right-inner" id="studio-right-inner">
+
+                        <!-- Idle: Orbit Animation -->
+                        <div class="studio-orbit-container" id="studio-orbit-container">
+                            <div class="studio-orbit-wrap">
+                                 <div class="studio-orbit-ring studio-orbit-ring-1">
+                                     <div class="studio-orbit-node" style="--a:315deg">
+                                         <div class="studio-orbit-node-icon"><i class="fa-solid fa-file-lines"></i></div>
+                                         <span>Analyzing</span>
+                                         <small>Your Video</small>
+                                     </div>
+                                     <div class="studio-orbit-node" style="--a:45deg">
+                                         <div class="studio-orbit-node-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                                         <span>Planning</span>
+                                         <small>Magic</small>
+                                     </div>
+                                     <div class="studio-orbit-node" style="--a:225deg">
+                                         <div class="studio-orbit-node-icon"><i class="fa-solid fa-wave-square"></i></div>
+                                         <span>Syncing</span>
+                                         <small>Everything</small>
+                                     </div>
+                                     <div class="studio-orbit-node" style="--a:135deg">
+                                         <div class="studio-orbit-node-icon"><i class="fa-solid fa-wand-magic"></i></div>
+                                         <span>Adding</span>
+                                         <small>Effects</small>
+                                     </div>
+                                 </div>
+                                <div class="studio-orbit-center">
+                                    <div class="studio-orbit-core"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                                </div>
+                            </div>
+                            <p class="studio-orbit-hint">Describe your edit above to get started</p>
+                        </div>
+
+                        <!-- Loading State -->
+                        <div class="studio-generating hidden" id="studio-generating">
+                            <div class="studio-generating-anim">
+                                <div class="studio-gen-ring"></div>
+                                <div class="studio-gen-core"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                            </div>
+                            <p class="studio-generating-text">Manus AI is editing your video...</p>
+                            <div class="studio-gen-steps" id="studio-gen-steps">
+                                <div class="studio-gen-step active"><i class="fa-solid fa-brain"></i> Analyzing your video</div>
+                                <div class="studio-gen-step"><i class="fa-solid fa-palette"></i> Rendering creative filters</div>
+                                <div class="studio-gen-step"><i class="fa-solid fa-music"></i> Mixing audio channels</div>
+                                <div class="studio-gen-step"><i class="fa-solid fa-scissors"></i> Applying edits with FFmpeg</div>
+                            </div>
+                        </div>
+
+                        <!-- Result: Edited Video player and chat -->
+                        <div class="studio-result hidden" id="studio-result">
+                            <div class="studio-result-header">
+                                <div class="studio-result-title"><i class="fa-solid fa-wand-magic-sparkles"></i> Edited Video Preview</div>
+                                <div class="studio-result-actions">
+                                    <a class="studio-action-btn" id="studio-download-btn" href="#" download="edited-video.mp4" title="Download Edited Video" style="text-decoration:none;"><i class="fa-solid fa-download"></i></a>
+                                    <button class="studio-action-btn" id="studio-copy-btn" title="Copy Edit Details"><i class="fa-solid fa-copy"></i></button>
+                                    <button class="studio-action-btn" id="studio-regenerate-btn" title="Re-Edit Video"><i class="fa-solid fa-rotate"></i></button>
+                                </div>
+                            </div>
+
+                            <!-- Video player for edited clip -->
+                            <div class="studio-video-container" style="margin-bottom:0.75rem;">
+                                <video id="studio-video-player" controls style="width:100%; border-radius:12px; border:1px solid rgba(255,255,255,0.1); background:#000; display:block; aspect-ratio: 16/9;"></video>
+                            </div>
+
+                            <div class="studio-result-body" id="studio-result-body" style="padding:0.75rem 1rem; border-radius:10px; max-height:100px; min-height:60px;"></div>
+
+                            <!-- Studio Chat -->
+                            <div class="studio-chat-section">
+                                <div class="studio-chat-label"><i class="fa-solid fa-comments"></i> Refine your video edits with AI</div>
+                                <div class="studio-chat-messages" id="studio-chat-messages"></div>
+                                <div class="studio-chat-input-row">
+                                    <input class="studio-chat-input" id="studio-chat-input" type="text" placeholder="Ask AI to refine the video (e.g. make it black and white)..." maxlength="400">
+                                    <button class="studio-chat-send" id="studio-chat-send"><i class="fa-solid fa-paper-plane"></i></button>
+                                </div>
+                                <div class="studio-chat-chips">
+                                    <button class="studio-chat-chip" data-msg="Make it grayscale (black & white)">Black & White</button>
+                                    <button class="studio-chat-chip" data-msg="Increase contrast and brightness">Enhance details</button>
+                                    <button class="studio-chat-chip" data-msg="Speed up the video to 1.5x">Speed up 1.5x</button>
+                                    <button class="studio-chat-chip" data-msg="Add bass boost to audio">Bass Boost</button>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <!-- ═══ END STUDIO MODAL ═══ -->
+
+    <div class="toast hidden" id="toast"><i class="fa-solid fa-circle-check"></i> Copied!</div>
+
+    <!-- ═══ DASHBOARD MODAL ═══ -->
+    <div class="modal-overlay hidden" id="dashboard-modal-overlay">
+        <div class="dashboard-modal">
+            <button class="modal-close-btn" id="dashboard-modal-close"><i class="fa-solid fa-xmark"></i></button>
+            <div class="dashboard-modal-header">
+                <i class="fa-solid fa-chart-pie dashboard-icon"></i>
+                <h2>My <span>Dashboard</span></h2>
+                <p id="dashboard-user-name">Welcome back!</p>
+            </div>
+            <div class="dashboard-stats-row">
+                <div class="dashboard-stat-card">
+                    <div class="dashboard-stat-value" id="dash-total">0</div>
+                    <div class="dashboard-stat-label"><i class="fa-solid fa-video"></i> Videos Analyzed</div>
+                </div>
+                <div class="dashboard-stat-card">
+                    <div class="dashboard-stat-value" id="dash-best">—</div>
+                    <div class="dashboard-stat-label"><i class="fa-solid fa-trophy"></i> Best Score</div>
+                </div>
+                <div class="dashboard-stat-card">
+                    <div class="dashboard-stat-value" id="dash-avg">—</div>
+                    <div class="dashboard-stat-label"><i class="fa-solid fa-chart-line"></i> Avg Score</div>
+                </div>
+            </div>
+            <div class="dashboard-history-title"><i class="fa-solid fa-clock-rotate-left"></i> Recent Analyses</div>
+            <div class="dashboard-history-list" id="dashboard-history-list">
+                <div class="dashboard-history-empty" id="dashboard-history-empty"><i class="fa-solid fa-folder-open"></i><p>No analyses yet. Upload your first video!</p></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ SHARE MODAL ═══ -->
+    <div class="modal-overlay hidden" id="share-modal-overlay">
+        <div class="share-modal">
+            <button class="modal-close-btn" id="share-modal-close"><i class="fa-solid fa-xmark"></i></button>
+            <div class="share-modal-header">
+                <i class="fa-solid fa-share-nodes share-icon"></i>
+                <h2>Share <span>Analysis</span></h2>
+                <p>Anyone with this link can view your results</p>
+            </div>
+            <div class="share-link-box">
+                <input type="text" id="share-link-input" class="share-link-input" readonly placeholder="Generating link...">
+                <button class="copy-share-btn" id="copy-share-btn"><i class="fa-solid fa-copy"></i> Copy</button>
+            </div>
+            <div class="share-status" id="share-status"></div>
+        </div>
+    </div>
+
+    <!-- ═══ YOUTUBE PUBLISH MODAL ═══ -->
+    <div class="modal-overlay hidden" id="yt-publish-modal-overlay">
+        <div class="yt-publish-modal">
+            <button class="modal-close-btn" id="yt-publish-close-btn"><i class="fa-solid fa-xmark"></i></button>
+            <div class="yt-publish-modal-header">
+                <i class="fa-brands fa-youtube yt-publish-icon"></i>
+                <h2>Publish to <span>YouTube</span></h2>
+                <p>Upload this video directly using your Google account permissions</p>
+            </div>
+            
+            <div class="yt-publish-form">
+                <div class="input-group">
+                    <label for="yt-video-title"><i class="fa-solid fa-heading"></i> Video Title</label>
+                    <input type="text" id="yt-video-title" placeholder="Loading AI Title..." required>
+                </div>
+                <div class="input-group">
+                    <label for="yt-video-desc"><i class="fa-solid fa-align-left"></i> Video Description</label>
+                    <textarea id="yt-video-desc" rows="6" placeholder="Loading AI Description..." required></textarea>
+                </div>
+                <div class="input-group">
+                    <label for="yt-video-tags"><i class="fa-solid fa-tags"></i> Tags (Comma separated)</label>
+                    <input type="text" id="yt-video-tags" placeholder="e.g. tech, coding, ai">
+                </div>
+                <div class="input-group">
+                    <label for="yt-privacy-status"><i class="fa-solid fa-lock"></i> Privacy Status</label>
+                    <select id="yt-privacy-status" class="yt-privacy-select">
+                        <option value="unlisted" selected>Unlisted (Recommended - review first)</option>
+                        <option value="private">Private</option>
+                        <option value="public">Public</option>
+                    </select>
+                </div>
+                
+                <div class="yt-publish-progress-container hidden" id="yt-upload-progress-container">
+                    <div class="yt-progress-bar">
+                        <div class="yt-progress-fill" id="yt-upload-progress-fill" style="width: 0%"></div>
+                    </div>
+                    <div class="yt-upload-status" id="yt-upload-status">Preparing file...</div>
+                </div>
+
+                <div class="yt-error-msg hidden" id="yt-upload-error-msg"></div>
+                
+                <button class="primary-btn yt-submit-btn" id="yt-start-upload-btn"><i class="fa-solid fa-cloud-arrow-up"></i> Start Upload</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ AUTH MODAL ═══ -->
+    <div class="modal-overlay hidden" id="auth-modal-overlay">
+        <div class="auth-modal">
+            <button class="modal-close-btn" id="auth-modal-close"><i class="fa-solid fa-xmark"></i></button>
+            <div class="auth-modal-header">
+                <i class="fa-solid fa-shield-halved auth-icon"></i>
+                <h2>Welcome to Veer<span>Alyze</span></h2>
+                <p>Sign in to save your video analyses & access AI features</p>
+            </div>
+
+            <!-- Google Sign In Button -->
+            <button class="google-signin-btn" id="google-signin-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+                Continue with Google
+            </button>
+
+            <!-- Facebook Sign In Button -->
+            <button class="facebook-signin-btn" id="facebook-signin-btn">
+                <i class="fa-brands fa-facebook" style="font-size: 1.2rem; color: #fff;"></i>
+                Continue with Facebook
+            </button>
+
+            <!-- Instagram Sign In Button -->
+            <button class="instagram-signin-btn" id="instagram-signin-btn">
+                <i class="fa-brands fa-instagram" style="font-size: 1.2rem; color: #fff;"></i>
+                Continue with Instagram
+            </button>
+
+            <div class="auth-divider"><span>OR</span></div>
+
+            <!-- Auth Mode Switcher -->
+            <div class="auth-tabs">
+                <button class="auth-tab active" id="tab-login">Login</button>
+                <button class="auth-tab" id="tab-signup">Sign Up</button>
+            </div>
+
+            <!-- Login / Signup Form -->
+            <form id="auth-form" class="auth-form">
+                <div class="input-group">
+                    <label for="auth-email"><i class="fa-solid fa-envelope"></i> Email</label>
+                    <input type="email" id="auth-email" placeholder="you@example.com" required>
+                </div>
+                <div class="input-group">
+                    <label for="auth-password"><i class="fa-solid fa-lock"></i> Password</label>
+                    <input type="password" id="auth-password" placeholder="••••••••" required minlength="6">
+                </div>
+                <div class="auth-error hidden" id="auth-error-msg"></div>
+                <button type="submit" class="primary-btn auth-submit-btn" id="auth-submit-btn">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

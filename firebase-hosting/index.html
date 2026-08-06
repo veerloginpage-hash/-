@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VeeraLyse — AI YouTube Analyzer</title>
+    <meta name="description" content="VeeraLyse is an AI-powered YouTube video analyzer that helps creators optimize their content for maximum reach and virality.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0a0a0f;
+            color: #e2e8f0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+            background-image: radial-gradient(ellipse at top, rgba(168,85,247,0.12) 0%, transparent 60%),
+                              radial-gradient(ellipse at bottom right, rgba(99,102,241,0.08) 0%, transparent 60%);
+        }
+        .logo {
+            font-size: 2.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #a855f7, #6366f1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+        .logo span { color: #e2e8f0; -webkit-text-fill-color: #e2e8f0; }
+        .tagline {
+            font-size: 1.15rem;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 2.5rem;
+            font-weight: 400;
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: rgba(168,85,247,0.15);
+            border: 1px solid rgba(168,85,247,0.3);
+            color: #c084fc;
+            padding: 0.35rem 0.9rem;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            letter-spacing: 0.05em;
+        }
+        h1 {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 1.2rem;
+            max-width: 700px;
+        }
+        h1 span {
+            background: linear-gradient(135deg, #a855f7, #6366f1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        p.desc {
+            font-size: 1.05rem;
+            color: rgba(255,255,255,0.55);
+            max-width: 520px;
+            margin: 0 auto 2.5rem;
+            line-height: 1.7;
+        }
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: linear-gradient(135deg, #a855f7, #6366f1);
+            color: white;
+            padding: 0.85rem 2rem;
+            border-radius: 12px;
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 700;
+            transition: all 0.2s;
+            box-shadow: 0 0 30px rgba(168,85,247,0.3);
+            margin-bottom: 1rem;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 40px rgba(168,85,247,0.5);
+        }
+        .features {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 3rem;
+            max-width: 700px;
+        }
+        .feature {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 1rem 1.2rem;
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.6);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .feature span { color: #a855f7; font-size: 1rem; }
+        footer {
+            position: fixed;
+            bottom: 1.2rem;
+            display: flex;
+            gap: 1.5rem;
+            font-size: 0.82rem;
+        }
+        footer a { color: rgba(255,255,255,0.35); text-decoration: none; transition: color 0.2s; }
+        footer a:hover { color: #a855f7; }
+    </style>
+</head>
+<body>
+    <div class="logo">Veera<span>Lyse</span></div>
+    <div class="badge">⚡ AI-Powered YouTube Analyzer</div>
+    <h1>Analyze Your Videos.<br><span>Maximize Your Reach.</span></h1>
+    <p class="desc">Upload your video and let our AI analyze hook strength, viral potential, algorithm compatibility, and auto-generate titles, descriptions & hashtags.</p>
+    <a href="https://yt-anayser-public.onrender.com" class="btn-primary">
+        🚀 Open VeeraLyse App
+    </a>
+    <div class="features">
+        <div class="feature"><span>🤖</span> AI Video Analysis</div>
+        <div class="feature"><span>🔥</span> Viral Score</div>
+        <div class="feature"><span>📊</span> YouTube Studio</div>
+        <div class="feature"><span>📤</span> Direct YouTube Upload</div>
+        <div class="feature"><span>🎯</span> Auto Title & Tags</div>
+        <div class="feature"><span>💬</span> Comment Manager</div>
+    </div>
+    <footer>
+        <a href="/privacy">Privacy Policy</a>
+        <a href="https://yt-anayser-public.onrender.com">App</a>
+    </footer>
+</body>
+</html>
