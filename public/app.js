@@ -55,16 +55,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let db = null;
 
     if (window.firebase) {
-        try {
-            firebase.initializeApp(firebaseConfig);
-        } catch (e) {
-            console.log('Firebase already initialized or error:', e);
-        }
-
-        // Init Firestore
-        if (firebase.firestore) {
-            db = firebase.firestore();
-        }
+        try { firebase.initializeApp(firebaseConfig); } catch (e) {}
+        if (firebase.firestore) db = firebase.firestore();
 
         // Auto-load shared analysis if URL is /share/:id
         if (_sharedId && db) {
@@ -78,115 +70,20 @@ document.addEventListener('DOMContentLoaded', () => {
                         processingCard?.classList.add('hidden');
                         resultsDashboard?.classList.remove('hidden');
                         renderResults(shareData.result, shareData.filename || 'Shared Analysis', 0);
-                    } else {
-                        alert('This shared link is invalid or expired.');
-                    }
+                    } else { alert('This shared link is invalid or expired.'); }
                 } catch (e) { console.log('Share load error:', e); }
             })();
         }
 
-        const authModalOverlay = document.getElementById('auth-modal-overlay');
-        const authModalBtn     = document.getElementById('auth-modal-btn');
-        const authModalClose   = document.getElementById('auth-modal-close');
-        const googleSigninBtn  = document.getElementById('google-signin-btn');
-        const facebookSigninBtn = document.getElementById('facebook-signin-btn');
-        const instagramSigninBtn = document.getElementById('instagram-signin-btn');
-        const tabLogin         = document.getElementById('tab-login');
-        const tabSignup        = document.getElementById('tab-signup');
-        const authForm         = document.getElementById('auth-form');
-        const authEmail        = document.getElementById('auth-email');
-        const authPassword     = document.getElementById('auth-password');
-        const authErrorMsg     = document.getElementById('auth-error-msg');
-        const authSubmitBtn    = document.getElementById('auth-submit-btn');
-        const userProfileMenu  = document.getElementById('user-profile-menu');
-        const userAvatar       = document.getElementById('user-avatar');
-        const userName         = document.getElementById('user-name');
-        const authProfileMenu  = document.getElementById('user-profile-menu');
-        const logoutBtn        = document.getElementById('logout-btn');
-        const dashboardBtn     = document.getElementById('dashboard-btn');
+        // Dashboard open/close
+        const dashboardBtn          = document.getElementById('dashboard-btn');
         const dashboardModalOverlay = document.getElementById('dashboard-modal-overlay');
         const dashboardModalClose   = document.getElementById('dashboard-modal-close');
-        
-        
-
-        const openAuthModal  = () => { if(authModalOverlay) { authModalOverlay.classList.remove('hidden'); if(authErrorMsg) authErrorMsg.classList.add('hidden'); } };
-        const closeAuthModal = () => { if(authModalOverlay) authModalOverlay.classList.add('hidden'); };
-        window._openAuthModal = openAuthModal;
-
-        authModalBtn?.addEventListener('click', openAuthModal);
-        authModalClose?.addEventListener('click', closeAuthModal);
-        authModalOverlay?.addEventListener('click', (e) => { if (e.target === authModalOverlay) closeAuthModal(); });
-
-        // Dashboard open/close
         dashboardBtn?.addEventListener('click', () => {
-            if (dashboardModalOverlay) {
-                dashboardModalOverlay.classList.remove('hidden');
-                renderDashboard();
-            }
+            if (dashboardModalOverlay) { dashboardModalOverlay.classList.remove('hidden'); renderDashboard(); }
         });
         dashboardModalClose?.addEventListener('click', () => dashboardModalOverlay?.classList.add('hidden'));
         dashboardModalOverlay?.addEventListener('click', (e) => { if (e.target === dashboardModalOverlay) dashboardModalOverlay.classList.add('hidden'); });
-
-        // Handle Redirect Sign-In results on page load (fallback)
-        if (firebase.auth) {
-            firebase.auth().getRedirectResult().catch(err => {
-                console.warn("Redirect result error (ignorable):", err.code);
-            });
-        }
-
-        // Google Sign In - using popup (COOP header on server allows this)
-        googleSigninBtn?.addEventListener('click', async () => {
-            const signInText = document.getElementById('google-signin-text');
-            if (signInText) signInText.textContent = 'Signing in...';
-            if (googleSigninBtn) googleSigninBtn.disabled = true;
-            try {
-                const provider = new firebase.auth.GoogleAuthProvider();
-                provider.setCustomParameters({ prompt: 'select_account' });
-                await firebase.auth().signInWithPopup(provider);
-                closeAuthModal();
-            } catch (err) {
-                console.error('Google sign in error:', err);
-                if (authErrorMsg) {
-                    if (err.code === 'auth/popup-blocked') {
-                        authErrorMsg.textContent = 'Popup blocked by browser. Please allow popups for this site.';
-                    } else if (err.code === 'auth/popup-closed-by-user') {
-                        authErrorMsg.textContent = 'Sign-in cancelled. Please try again.';
-                    } else {
-                        authErrorMsg.textContent = err.message;
-                    }
-                    authErrorMsg.classList.remove('hidden');
-                }
-            } finally {
-                if (signInText) signInText.textContent = 'Continue with Google';
-                if (googleSigninBtn) googleSigninBtn.disabled = false;
-            }
-        });
-
-        // Logout
-        logoutBtn?.addEventListener('click', () => {
-            firebase.auth().signOut();
-        });
-
-        // Auth state listener
-        firebase.auth().onAuthStateChanged((user) => {
-            currentUser = user;
-            if (user) {
-                authModalBtn?.classList.add('hidden');
-                userProfileMenu?.classList.remove('hidden');
-                dashboardBtn?.classList.remove('hidden');
-                const displayName = user.displayName || user.email.split('@')[0];
-                if (userName) userName.textContent = displayName;
-                if (userAvatar) {
-                    userAvatar.src = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=a855f7&color=fff`;
-                }
-                // Load Firestore history into localStorage cache on login
-                loadFirestoreHistoryToCache(user.uid);
-            } else {
-                authModalBtn?.classList.remove('hidden');
-                userProfileMenu?.classList.add('hidden');
-                dashboardBtn?.classList.add('hidden');
-            }
-        });
     }
     let chatHistory     = [];
     let channelChatHistory = [];
