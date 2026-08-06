@@ -107,6 +107,14 @@ body {
     filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.4));
 }
 
+.logo-img {
+    width: 2.2rem;
+    height: 2.2rem;
+    object-fit: contain;
+    border-radius: 8px;
+    filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.4));
+}
+
 .logo h1 {
     font-family: var(--font-heading);
     font-size: 1.8rem;
