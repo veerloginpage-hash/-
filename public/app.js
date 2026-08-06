@@ -127,32 +127,38 @@ document.addEventListener('DOMContentLoaded', () => {
         dashboardModalClose?.addEventListener('click', () => dashboardModalOverlay?.classList.add('hidden'));
         dashboardModalOverlay?.addEventListener('click', (e) => { if (e.target === dashboardModalOverlay) dashboardModalOverlay.classList.add('hidden'); });
 
-        // Handle Redirect Sign-In results on page load
+        // Handle Redirect Sign-In results on page load (fallback)
         if (firebase.auth) {
-            firebase.auth().getRedirectResult().then((result) => {
-                if (result && result.user) {
-                    closeAuthModal();
-                }
-            }).catch(err => {
-                console.error("Redirect auth error:", err);
-                if (authErrorMsg) {
-                    authErrorMsg.textContent = err.message;
-                    authErrorMsg.classList.remove('hidden');
-                    openAuthModal();
-                }
+            firebase.auth().getRedirectResult().catch(err => {
+                console.warn("Redirect result error (ignorable):", err.code);
             });
         }
 
-        // Google Sign In
+        // Google Sign In - using popup (COOP header on server allows this)
         googleSigninBtn?.addEventListener('click', async () => {
+            const signInText = document.getElementById('google-signin-text');
+            if (signInText) signInText.textContent = 'Signing in...';
+            if (googleSigninBtn) googleSigninBtn.disabled = true;
             try {
                 const provider = new firebase.auth.GoogleAuthProvider();
-                await firebase.auth().signInWithRedirect(provider);
+                provider.setCustomParameters({ prompt: 'select_account' });
+                await firebase.auth().signInWithPopup(provider);
+                closeAuthModal();
             } catch (err) {
+                console.error('Google sign in error:', err);
                 if (authErrorMsg) {
-                    authErrorMsg.textContent = err.message;
+                    if (err.code === 'auth/popup-blocked') {
+                        authErrorMsg.textContent = 'Popup blocked by browser. Please allow popups for this site.';
+                    } else if (err.code === 'auth/popup-closed-by-user') {
+                        authErrorMsg.textContent = 'Sign-in cancelled. Please try again.';
+                    } else {
+                        authErrorMsg.textContent = err.message;
+                    }
                     authErrorMsg.classList.remove('hidden');
                 }
+            } finally {
+                if (signInText) signInText.textContent = 'Continue with Google';
+                if (googleSigninBtn) googleSigninBtn.disabled = false;
             }
         });
 
