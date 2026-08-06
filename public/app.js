@@ -127,89 +127,30 @@ document.addEventListener('DOMContentLoaded', () => {
         dashboardModalClose?.addEventListener('click', () => dashboardModalOverlay?.classList.add('hidden'));
         dashboardModalOverlay?.addEventListener('click', (e) => { if (e.target === dashboardModalOverlay) dashboardModalOverlay.classList.add('hidden'); });
 
-        tabLogin?.addEventListener('click', () => {
-            authMode = 'login';
-            tabLogin.classList.add('active');
-            tabSignup.classList.remove('active');
-            if (authSubmitBtn) authSubmitBtn.textContent = 'Login';
-            if (authErrorMsg) authErrorMsg.classList.add('hidden');
-        });
-
-        tabSignup?.addEventListener('click', () => {
-            authMode = 'signup';
-            tabSignup.classList.add('active');
-            tabLogin.classList.remove('active');
-            if (authSubmitBtn) authSubmitBtn.textContent = 'Create Account';
-            if (authErrorMsg) authErrorMsg.classList.add('hidden');
-        });
+        // Handle Redirect Sign-In results on page load
+        if (firebase.auth) {
+            firebase.auth().getRedirectResult().then((result) => {
+                if (result && result.user) {
+                    closeAuthModal();
+                }
+            }).catch(err => {
+                console.error("Redirect auth error:", err);
+                if (authErrorMsg) {
+                    authErrorMsg.textContent = err.message;
+                    authErrorMsg.classList.remove('hidden');
+                    openAuthModal();
+                }
+            });
+        }
 
         // Google Sign In
         googleSigninBtn?.addEventListener('click', async () => {
             try {
                 const provider = new firebase.auth.GoogleAuthProvider();
-                await firebase.auth().signInWithPopup(provider);
-                closeAuthModal();
+                await firebase.auth().signInWithRedirect(provider);
             } catch (err) {
                 if (authErrorMsg) {
                     authErrorMsg.textContent = err.message;
-                    authErrorMsg.classList.remove('hidden');
-                }
-            }
-        });
-
-        // Facebook Sign In
-        facebookSigninBtn?.addEventListener('click', async () => {
-            try {
-                const provider = new firebase.auth.FacebookAuthProvider();
-                await firebase.auth().signInWithPopup(provider);
-                closeAuthModal();
-            } catch (err) {
-                if (authErrorMsg) {
-                    if (err.code === 'auth/operation-not-allowed') {
-                        authErrorMsg.innerHTML = 'Facebook sign-in is not enabled. Go to your Firebase Console -> Authentication -> Sign-in method, and enable Facebook with your Meta App Credentials.';
-                    } else {
-                        authErrorMsg.textContent = err.message;
-                    }
-                    authErrorMsg.classList.remove('hidden');
-                }
-            }
-        });
-
-        // Instagram Sign In
-        instagramSigninBtn?.addEventListener('click', () => {
-            if (authErrorMsg) {
-                authErrorMsg.innerHTML = '<i class="fa-solid fa-circle-info"></i> Instagram sign-in is managed through Meta\'s unified login. Please <strong>Sign in with Facebook</strong> to sync your Meta Creator/Business accounts, or configure a Custom OAuth redirect on your server.';
-                authErrorMsg.classList.remove('hidden');
-            }
-        });
-
-        // Email / Password Form Submit
-        authForm?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (authErrorMsg) authErrorMsg.classList.add('hidden');
-            const email = authEmail.value.trim();
-            const password = authPassword.value;
-
-            try {
-                if (authMode === 'login') {
-                    await firebase.auth().signInWithEmailAndPassword(email, password);
-                } else {
-                    await firebase.auth().createUserWithEmailAndPassword(email, password);
-                }
-                closeAuthModal();
-            } catch (err) {
-                if (authErrorMsg) {
-                    if (err.code === 'auth/operation-not-allowed') {
-                        authErrorMsg.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> <strong>Email/Password Sign-In Disabled</strong>: Kripya Firebase Console me jaakar Authentication -> Sign-in method me "Email/Password" provider ko enable karein.';
-                    } else if (err.code === 'auth/user-not-found') {
-                        authErrorMsg.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> <strong>Account nahi mila</strong>: Is email se koi account nahi bana hai. Kripya pehle <strong>Sign Up</strong> tab par click karke account banayein.';
-                    } else if (err.code === 'auth/wrong-password') {
-                        authErrorMsg.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> <strong>Galat Password</strong>: Kripya sahi password dalein ya password reset karein.';
-                    } else if (err.code === 'auth/email-already-in-use') {
-                        authErrorMsg.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> <strong>Email pehle se register hai</strong>: Yeh email pehle se register hai. Kripya <strong>Login</strong> tab par jaakar sign in karein.';
-                    } else {
-                        authErrorMsg.textContent = err.message;
-                    }
                     authErrorMsg.classList.remove('hidden');
                 }
             }
