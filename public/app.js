@@ -113,22 +113,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const closeAuthModal = () => { if(authModalOverlay) authModalOverlay.classList.add('hidden'); };
         window._openAuthModal = openAuthModal;
 
-        // Handle Redirect Sign-In results on page load
-        if (firebase.auth) {
-            firebase.auth().getRedirectResult().then((result) => {
-                if (result && result.user) {
-                    closeAuthModal();
-                }
-            }).catch(err => {
-                console.error("Redirect auth error:", err);
-                if (authErrorMsg) {
-                    authErrorMsg.textContent = err.message;
-                    authErrorMsg.classList.remove('hidden');
-                    openAuthModal();
-                }
-            });
-        }
-
         authModalBtn?.addEventListener('click', openAuthModal);
         authModalClose?.addEventListener('click', closeAuthModal);
         authModalOverlay?.addEventListener('click', (e) => { if (e.target === authModalOverlay) closeAuthModal(); });
@@ -163,7 +147,8 @@ document.addEventListener('DOMContentLoaded', () => {
         googleSigninBtn?.addEventListener('click', async () => {
             try {
                 const provider = new firebase.auth.GoogleAuthProvider();
-                await firebase.auth().signInWithRedirect(provider);
+                await firebase.auth().signInWithPopup(provider);
+                closeAuthModal();
             } catch (err) {
                 if (authErrorMsg) {
                     authErrorMsg.textContent = err.message;
@@ -176,7 +161,8 @@ document.addEventListener('DOMContentLoaded', () => {
         facebookSigninBtn?.addEventListener('click', async () => {
             try {
                 const provider = new firebase.auth.FacebookAuthProvider();
-                await firebase.auth().signInWithRedirect(provider);
+                await firebase.auth().signInWithPopup(provider);
+                closeAuthModal();
             } catch (err) {
                 if (authErrorMsg) {
                     if (err.code === 'auth/operation-not-allowed') {
