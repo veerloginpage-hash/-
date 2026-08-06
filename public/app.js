@@ -363,16 +363,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-
     // ── File Select → Upload ──────────────────────────────────────────────────
     function handleFileSelect(file) {
-        // Feature 4: Login gate — require sign-in to upload video
-        if (!currentUser) {
-            if (typeof window._openAuthModal === 'function') {
-                window._openAuthModal();
-            }
-            return;
-        }
         const validTypes = ['video/mp4', 'video/webm'];
         if (!validTypes.includes(file.type)) { alert('Unsupported format. Use MP4 or WebM.'); return; }
         if (file.size > 1024 * 1024 * 1024) { alert('File exceeds 1GB limit.'); return; }
