@@ -300,9 +300,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const dashEmpty   = document.getElementById('dashboard-history-empty');
         const dashUserName = document.getElementById('dashboard-user-name');
 
-        if (!currentUser) return;
-        const displayName = currentUser.displayName || currentUser.email?.split('@')[0] || 'User';
-        if (dashUserName) dashUserName.textContent = `Welcome back, ${displayName}!`;
+        if (!currentUser) {
+            const displayName = 'You';
+            if (dashUserName) dashUserName.textContent = `Welcome!`;
+        } else {
+            const displayName = currentUser.displayName || currentUser.email?.split('@')[0] || 'User';
+            if (dashUserName) dashUserName.textContent = `Welcome back, ${displayName}!`;
+        }
 
         let items = [];
         if (db) {
@@ -543,27 +547,19 @@ document.addEventListener('DOMContentLoaded', () => {
         // Show Share button for logged-in users, wire it up fresh each render
         const shareBtn = document.getElementById('share-result-btn');
         if (shareBtn) {
-            if (currentUser) {
-                shareBtn.classList.remove('hidden');
-                const newShareBtn = shareBtn.cloneNode(true);
-                shareBtn.parentNode.replaceChild(newShareBtn, shareBtn);
-                newShareBtn.addEventListener('click', shareAnalysis);
-            } else {
-                shareBtn.classList.add('hidden');
-            }
+            shareBtn.classList.remove('hidden');
+            const newShareBtn = shareBtn.cloneNode(true);
+            shareBtn.parentNode.replaceChild(newShareBtn, shareBtn);
+            newShareBtn.addEventListener('click', shareAnalysis);
         }
 
         // Show YouTube Publish button for logged-in users, wire it up fresh each render
         const ytBtn = document.getElementById('yt-publish-btn');
         if (ytBtn) {
-            if (currentUser) {
-                ytBtn.classList.remove('hidden');
-                const newYtBtn = ytBtn.cloneNode(true);
-                ytBtn.parentNode.replaceChild(newYtBtn, ytBtn);
-                newYtBtn.addEventListener('click', function() { if(window._openYtPublishModal) window._openYtPublishModal(); });
-            } else {
-                ytBtn.classList.add('hidden');
-            }
+            ytBtn.classList.remove('hidden');
+            const newYtBtn = ytBtn.cloneNode(true);
+            ytBtn.parentNode.replaceChild(newYtBtn, ytBtn);
+            newYtBtn.addEventListener('click', function() { if(window._openYtPublishModal) window._openYtPublishModal(); });
         }
 
         // Pass analysis context to Studio
