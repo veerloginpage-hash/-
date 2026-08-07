@@ -924,7 +924,8 @@ CRITICAL RULE FOR ALL TEXT FIELDS, STRATEGIES, REASONINGS, TITLES, DESCRIPTIONS,
 THUMBNAIL SMART FRAME RULE (very important):
 - Scan the entire video visually. Identify the single best frame that would work as a high-CTR YouTube thumbnail.
 - A "best frame" = creator's most expressive/emotional face, peak action moment, most visually striking scene, or the most curious/shocking visual.
-- Set "thumbnailBestFrame.hasGoodFrame" = true ONLY if you find a genuinely great frame. If the video is a talking head with no peak moment, or the best frames are too dull/blurry, set it to false.
+- CRITICAL: The frame MUST be completely sharp and in focus. DO NOT pick a timestamp where the camera is moving or the subject is moving fast (motion blur).
+- Set "thumbnailBestFrame.hasGoodFrame" = true ONLY if you find a genuinely great AND sharp frame. If the best moments are blurry, out of focus, or it's just a boring talking head, set it to false.
 - "thumbnailBestFrame.timestamp" must be the exact HH:MM:SS of that frame (e.g. "00:00:07").
 - "thumbnailBestFrame.overlayText" = short bold text that makes the thumbnail click-worthy (max 5 words), or null if not needed.
 - "thumbnailBestFrame.colorFilter" = name of best cinematic grade (e.g. "cinematic teal-orange"), or null.
