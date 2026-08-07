@@ -41,13 +41,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── FIREBASE AUTH SETUP ──────────────────────────────────────────────────
     const firebaseConfig = {
-        apiKey: "AIzaSyB35U0lN2UmJaqDRjyK1s2TfO8NILNrCKI",
-        authDomain: "yt-analyzer-4aa2d.firebaseapp.com",
-        projectId: "yt-analyzer-4aa2d",
-        storageBucket: "yt-analyzer-4aa2d.firebasestorage.app",
-        messagingSenderId: "665785946081",
-        appId: "1:665785946081:web:e8fe1b8c87cc5109588ca0",
-        measurementId: "G-822GY2E4WS"
+        apiKey: "AIzaSyCBX8wkxvT8KrJLoRaJnujbLmA-n6SgG74",
+        authDomain: "veeralyze.firebaseapp.com",
+        projectId: "veeralyze",
+        storageBucket: "veeralyze.firebasestorage.app",
+        messagingSenderId: "703560889115",
+        appId: "1:703560889115:web:378b7abcd40c24a71859be",
+        measurementId: "G-JT4MYTYJRW"
     };
 
     let currentUser = null;
@@ -57,6 +57,104 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.firebase) {
         try { firebase.initializeApp(firebaseConfig); } catch (e) {}
         if (firebase.firestore) db = firebase.firestore();
+
+        if (firebase.auth) {
+            firebase.auth().onAuthStateChanged((user) => {
+                currentUser = user;
+                updateAuthUI(user);
+                if (user) {
+                    loadFirestoreHistoryToCache(user.uid).then(() => {
+                        loadHistoryList();
+                    });
+                } else {
+                    loadHistoryList();
+                }
+            });
+        }
+
+        const authModalOverlay = document.getElementById('auth-modal-overlay');
+        const authModalClose   = document.getElementById('auth-modal-close');
+        const authForm         = document.getElementById('auth-form');
+        const authEmail        = document.getElementById('auth-email');
+        const authPassword     = document.getElementById('auth-password');
+        const authToggleBtn    = document.getElementById('auth-toggle-btn');
+        const authToggleText   = document.getElementById('auth-toggle-text');
+        const authModalDesc    = document.getElementById('auth-modal-desc');
+        const authErrorMsg     = document.getElementById('auth-error-msg');
+        const googleAuthBtn    = document.getElementById('google-auth-btn');
+
+        authModalClose?.addEventListener('click', () => {
+            authModalOverlay?.classList.add('hidden');
+            if (authErrorMsg) authErrorMsg.style.display = 'none';
+        });
+
+        authModalOverlay?.addEventListener('click', (e) => {
+            if (e.target === authModalOverlay) {
+                authModalOverlay.classList.add('hidden');
+                if (authErrorMsg) authErrorMsg.style.display = 'none';
+            }
+        });
+
+        authToggleBtn?.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (authErrorMsg) authErrorMsg.style.display = 'none';
+            if (authMode === 'login') {
+                authMode = 'signup';
+                if (authToggleText) authToggleText.textContent = "Already have an account?";
+                if (authToggleBtn) authToggleBtn.textContent = "Sign In";
+                if (authModalDesc) authModalDesc.textContent = "Create an account to start saving video analytics reports.";
+                const submitBtn = authForm?.querySelector('button[type="submit"]');
+                if (submitBtn) submitBtn.textContent = "Sign Up";
+            } else {
+                authMode = 'login';
+                if (authToggleText) authToggleText.textContent = "Don't have an account?";
+                if (authToggleBtn) authToggleBtn.textContent = "Sign Up";
+                if (authModalDesc) authModalDesc.textContent = "Access history, dashboard analytics, and creator features.";
+                const submitBtn = authForm?.querySelector('button[type="submit"]');
+                if (submitBtn) submitBtn.textContent = "Sign In";
+            }
+        });
+
+        authForm?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!firebase.auth) return;
+            const email = authEmail?.value;
+            const password = authPassword?.value;
+            if (authErrorMsg) authErrorMsg.style.display = 'none';
+
+            try {
+                if (authMode === 'login') {
+                    await firebase.auth().signInWithEmailAndPassword(email, password);
+                } else {
+                    await firebase.auth().createUserWithEmailAndPassword(email, password);
+                }
+                authModalOverlay?.classList.add('hidden');
+                authForm.reset();
+            } catch (err) {
+                console.error("Auth error:", err);
+                if (authErrorMsg) {
+                    authErrorMsg.textContent = err.message || "An authentication error occurred.";
+                    authErrorMsg.style.display = 'block';
+                }
+            }
+        });
+
+        googleAuthBtn?.addEventListener('click', async () => {
+            if (!firebase.auth) return;
+            if (authErrorMsg) authErrorMsg.style.display = 'none';
+            try {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                provider.addScope('https://www.googleapis.com/auth/youtube.upload');
+                await firebase.auth().signInWithPopup(provider);
+                authModalOverlay?.classList.add('hidden');
+            } catch (err) {
+                console.error("Google sign in error:", err);
+                if (authErrorMsg) {
+                    authErrorMsg.textContent = err.message || "Failed to sign in with Google.";
+                    authErrorMsg.style.display = 'block';
+                }
+            }
+        });
 
         // Auto-load shared analysis if URL is /share/:id
         if (_sharedId && db) {
@@ -84,6 +182,46 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         dashboardModalClose?.addEventListener('click', () => dashboardModalOverlay?.classList.add('hidden'));
         dashboardModalOverlay?.addEventListener('click', (e) => { if (e.target === dashboardModalOverlay) dashboardModalOverlay.classList.add('hidden'); });
+    }
+
+    function updateAuthUI(user) {
+        const authWidget = document.getElementById('auth-widget');
+        const dashboardBtn = document.getElementById('dashboard-btn');
+        if (!authWidget) return;
+
+        if (user) {
+            authWidget.innerHTML = `
+                <div class="user-profile-menu">
+                    <img src="${user.photoURL || 'https://lh3.googleusercontent.com/a/default-user'}" class="user-avatar" alt="Avatar">
+                    <span class="user-name">${user.displayName || user.email?.split('@')[0] || 'User'}</span>
+                    <button class="icon-btn-danger" id="logout-btn" title="Sign Out">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </div>
+            `;
+            dashboardBtn?.classList.remove('hidden');
+            
+            document.getElementById('logout-btn')?.addEventListener('click', () => {
+                if (firebase.auth) {
+                    firebase.auth().signOut().then(() => {
+                        localStorage.removeItem('ytAnalyzerHistory');
+                        window.location.reload();
+                    });
+                }
+            });
+        } else {
+            authWidget.innerHTML = `
+                <button class="va-studio-trigger-btn primary-auth-btn" id="login-trigger-btn" style="margin-left: 0.5rem;">
+                    <i class="fa-solid fa-right-to-bracket"></i> Sign In
+                </button>
+            `;
+            dashboardBtn?.classList.add('hidden');
+
+            document.getElementById('login-trigger-btn')?.addEventListener('click', () => {
+                const overlay = document.getElementById('auth-modal-overlay');
+                if (overlay) overlay.classList.remove('hidden');
+            });
+        }
     }
     let chatHistory     = [];
     let channelChatHistory = [];
@@ -309,7 +447,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         let items = [];
-        if (db) {
+        if (db && currentUser) {
             try {
                 const snap = await db.collection('users').doc(currentUser.uid)
                     .collection('history').orderBy('savedAt', 'desc').limit(20).get();
