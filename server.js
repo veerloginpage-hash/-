@@ -261,19 +261,54 @@ function getThumbnailDimensions(videoAspect, videoWidth, videoHeight) {
     return { width: 1280, height: 720, aspect: '16:9' };
 }
 
-function buildThumbnailPrompt(basePrompt, aspect) {
+
+function buildThumbnailPrompt(jsonResponse, aspect) {
     const formatText = aspect === '9:16'
         ? 'vertical 9:16 YouTube Shorts cover'
         : aspect === '1:1'
             ? 'square social video cover'
             : 'wide 16:9 YouTube thumbnail';
-    return [
-        basePrompt,
-        `Create a ${formatText}.`,
-        'Make it sharp, high contrast, clean, clickable, and not stretched.',
-        'Keep faces and text natural, centered, readable, and inside safe margins.',
-        'No warped bodies, no broken letters, no clutter, no watermark.'
-    ].join(' ');
+
+    // Pull rich context from Gemini analysis
+    const base       = (jsonResponse.thumbnailPrompt || '').replace(/[^\x20-\x7E]/g, ' ').trim();
+    const titles     = jsonResponse.metadata?.titles?.english?.[0] || '';
+    const niche      = jsonResponse.contentCategory?.primaryNiche || '';
+    const emotion    = jsonResponse.emotionAnalysis?.primaryEmotion || '';
+    const hook       = jsonResponse.hookAnalysis?.hookText || '';
+    const viralScore = jsonResponse.viralScore?.overall || '';
+    const mood       = jsonResponse.contentCategory?.contentMood || '';
+    const rating     = jsonResponse.rating || '';
+    const bf         = jsonResponse.thumbnailBestFrame || {};
+    const overlayText = bf.overlayText || null;
+    const colorFilter = bf.colorFilter || null;
+
+    // Build a layered, hyper-specific thumbnail prompt
+    const parts = [
+        // 1. Core visual scene from Gemini
+        base,
+
+        // 2. Content context
+        niche       ? `Niche: ${niche}.` : '',
+        emotion     ? `Dominant emotion in scene: ${emotion}.` : '',
+        mood        ? `Overall mood: ${mood}.` : '',
+        hook        ? `Hook/subject shown: "${hook}".` : '',
+        titles      ? `The video is about: "${titles}".` : '',
+
+        // 3. Overlay text if Gemini suggested one
+        overlayText ? `Include bold eye-catching text on the thumbnail: "${overlayText}". Use a thick font, high contrast, legible.` : '',
+
+        // 4. Color grade
+        colorFilter ? `Apply ${colorFilter} color grading for cinematic look.` : 'Apply cinematic color grading with rich contrast.',
+
+        // 5. Quality and format rules
+        `Create a professional ${formatText} that maximizes click-through rate.`,
+        'Ultra-sharp, high-contrast, dramatic lighting, professional photography style.',
+        'No watermarks, no logos, no clutter, no broken text, no stretched proportions.',
+        'Faces must be natural, expressive, and centered. Text inside safe margins.',
+        'Style: modern YouTube thumbnail, premium, eye-catching, like MrBeast or top creator thumbnails.'
+    ].filter(Boolean).join(' ');
+
+    return parts;
 }
 
 async function generateHuggingFaceThumbnail(prompt) {
@@ -796,6 +831,71 @@ function compressVideo(inputPath, outputPath) {
     });
 }
 
+// Extract a single frame from a video at a given HH:MM:SS timestamp using ffmpeg.
+function extractVideoFrame(videoPath, timestamp, outputPath) {
+    return new Promise((resolve, reject) => {
+        const { exec } = require('child_process');
+        const safeInput = videoPath.replace(/\\/g, '/');
+        const safeOutput = outputPath.replace(/\\/g, '/');
+        // Use high quality JPEG extraction at the given timestamp
+        const cmd = `ffmpeg -y -ss "${timestamp}" -i "${safeInput}" -frames:v 1 -q:v 2 "${safeOutput}"`;
+        exec(cmd, { timeout: 30000 }, (error, stdout, stderr) => {
+            if (error) {
+                console.error('[FrameExtract] FFmpeg error:', error.message);
+                reject(error);
+            } else if (!require('fs').existsSync(safeOutput)) {
+                reject(new Error('Frame file was not created by ffmpeg'));
+            } else {
+                resolve(safeOutput);
+            }
+        });
+    });
+}
+
+// Enhance an extracted frame image using Hugging Face image-to-image model.
+async function enhanceFrameWithHuggingFace(frameBuffer, enhancementPrompt) {
+    const hfKey = process.env.HUGGINGFACE_API_KEY;
+    if (!hfKey) throw new Error('Hugging Face API key not set.');
+
+    // Use FLUX.1 or SDXL-Refiner for img2img style enhancement
+    const models = [
+        'stabilityai/stable-diffusion-xl-refiner-1.0',
+        'black-forest-labs/FLUX.1-schnell'
+    ];
+
+    for (const model of models) {
+        try {
+            const url = `https://api-inference.huggingface.co/models/${model}`;
+            // Send the base image as raw bytes + enhancement prompt as JSON payload
+            const payload = JSON.stringify({
+                inputs: enhancementPrompt,
+                parameters: {
+                    image: frameBuffer.toString('base64'),
+                    strength: 0.45,
+                    guidance_scale: 7.5
+                }
+            });
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${hfKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: payload
+            });
+            if (res.ok) {
+                const buf = Buffer.from(await res.arrayBuffer());
+                if (buf.length > 1000) return { buffer: buf, model };
+            }
+            const errText = await res.text().catch(() => '');
+            console.error(`HF ${model} img2img failed: ${res.status} ${errText.substring(0, 100)}`);
+        } catch (err) {
+            console.error(`HF ${model} img2img exception:`, err.message);
+        }
+    }
+    throw new Error('All HF img2img models failed.');
+}
+
 // ─────────────────────────────────────────────────────────────
 async function runAnalysisWorker(jobId, localPath, mimeType, originalName, videoAspect, videoWidth = 0, videoHeight = 0) {
     const job = jobs[jobId];
@@ -820,6 +920,16 @@ CRITICAL RULE FOR ALL TEXT FIELDS, STRATEGIES, REASONINGS, TITLES, DESCRIPTIONS,
 3. Use simple English or Hinglish-style wording that a beginner can understand.
 4. Prefer arrays of short points when a field needs multiple ideas.
 5. Keep the information complete, but compact.
+
+THUMBNAIL SMART FRAME RULE (very important):
+- Scan the entire video visually. Identify the single best frame that would work as a high-CTR YouTube thumbnail.
+- A "best frame" = creator's most expressive/emotional face, peak action moment, most visually striking scene, or the most curious/shocking visual.
+- Set "thumbnailBestFrame.hasGoodFrame" = true ONLY if you find a genuinely great frame. If the video is a talking head with no peak moment, or the best frames are too dull/blurry, set it to false.
+- "thumbnailBestFrame.timestamp" must be the exact HH:MM:SS of that frame (e.g. "00:00:07").
+- "thumbnailBestFrame.overlayText" = short bold text that makes the thumbnail click-worthy (max 5 words), or null if not needed.
+- "thumbnailBestFrame.colorFilter" = name of best cinematic grade (e.g. "cinematic teal-orange"), or null.
+- "thumbnailBestFrame.enhancementInstructions" = what the AI should do on top of the frame (e.g. "sharpen face, add warm glow, vignette edges"), or null.
+- "thumbnailPrompt" is still required — it's used when hasGoodFrame = false.
 
 Follow this exact structure:
 
@@ -1204,7 +1314,16 @@ Follow this exact structure:
     }
   },
 
-  "thumbnailPrompt": "Detailed production-grade thumbnail prompt for image generation",
+  "thumbnailPrompt": "EXACT visual description of the BEST thumbnail scene from THIS specific video. Write like a professional image prompt: describe the exact subject (e.g. 'Indian male creator aged 25 wearing red hoodie, shocked open-mouth expression'), the background (e.g. 'dark gaming setup with RGB lights'), key props, lighting (e.g. 'dramatic front lighting with dark shadows'), and any graphic elements. Be very specific to what actually appears in this video. DO NOT write generic phrases like 'YouTube creator'. Describe what is literally in this video.",
+
+  "thumbnailBestFrame": {
+    "timestamp": "00:00:04",
+    "reason": "Why this exact frame is the best for a thumbnail — e.g., creator's most expressive face, the most exciting visual moment, peak action, etc.",
+    "hasGoodFrame": true,
+    "overlayText": "Short punchy text to add on the thumbnail, or null if none needed",
+    "colorFilter": "Name of a color grade/filter to apply: e.g. 'cinematic teal-orange', 'warm golden hour', 'cold blue contrast', 'high contrast dark', or null for no filter",
+    "enhancementInstructions": "Brief instruction for the AI image model on what to do with this extracted frame — e.g. 'brighten the face, add cinematic vignette, overlay bold white text at bottom', or null"
+  },
 
   "algorithmSimulation": {
     "ctrScore": 85,
@@ -1350,31 +1469,92 @@ Follow this exact structure:
 
                     jsonResponse = JSON.parse(result.response.text());
 
-                    // Generate a thumbnail in the same format as the uploaded video/short.
+                    // ── SMART THUMBNAIL PIPELINE ─────────────────────────────────
                     if (jsonResponse.thumbnailPrompt) {
-                        const enhancedPrompt = buildThumbnailPrompt(jsonResponse.thumbnailPrompt, thumbnailSize.aspect)
-                            .replace(/[^\x20-\x7E]/g, ' ')
+                        // Pass full jsonResponse so buildThumbnailPrompt can use all analysis context
+                        const enhancedPrompt = buildThumbnailPrompt(jsonResponse, thumbnailSize.aspect)
                             .replace(/\s+/g, ' ')
                             .trim();
-                        
+
                         jsonResponse.videoAspect = thumbnailSize.aspect;
                         jsonResponse.thumbnailSize = { width: thumbnailSize.width, height: thumbnailSize.height };
 
-                        try {
-                            job.logs.push('Generating high-quality thumbnail using Hugging Face...');
-                            const hfResult = await generateHuggingFaceThumbnail(enhancedPrompt);
-                            const cacheId = `thumb_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-                            generatedThumbnails.set(cacheId, { buffer: hfResult.buffer, contentType: 'image/jpeg' });
-                            
-                            jsonResponse.thumbnailImageUrl = `/api/thumbnail-cache/${cacheId}`;
-                            job.logs.push(`Hugging Face thumbnail generated successfully using ${hfResult.model}!`);
-                        } catch (hfError) {
-                            console.error('Hugging Face generation failed, falling back to Pollinations:', hfError.message);
-                            job.logs.push('Hugging Face failed or busy, using backup thumbnail generator...');
-                            const seed = Math.floor(Math.random() * 100000);
-                            jsonResponse.thumbnailImageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=${thumbnailSize.width}&height=${thumbnailSize.height}&nologo=true&enhance=true&safe=true&seed=${seed}`;
+                        const bestFrame = jsonResponse.thumbnailBestFrame;
+                        let thumbnailGenerated = false;
+
+                        // ── PHASE 1: Try to extract best video frame ──────────────
+                        if (bestFrame && bestFrame.hasGoodFrame && bestFrame.timestamp) {
+                            const framePath = localPath.replace(/\.[^.]+$/, `_thumb_frame_${Date.now()}.jpg`);
+                            try {
+                                job.logs.push(`🎬 Extracting best video frame at ${bestFrame.timestamp} for thumbnail...`);
+                                await extractVideoFrame(localPath, bestFrame.timestamp, framePath);
+
+                                const frameBuffer = fs.readFileSync(framePath);
+                                try { fs.unlinkSync(framePath); } catch(e) {}
+
+                                // ── PHASE 2: Enhance frame with Hugging Face img2img ──
+                                const frameEnhancementPrompt = [
+                                    bestFrame.enhancementInstructions || '',
+                                    bestFrame.colorFilter ? `Apply ${bestFrame.colorFilter} color grading.` : '',
+                                    bestFrame.overlayText ? `Add bold text: "${bestFrame.overlayText}"` : '',
+                                    `Make it a professional high-CTR YouTube ${thumbnailSize.aspect === '9:16' ? 'Shorts' : ''} thumbnail. High contrast, sharp, cinematic.`
+                                ].filter(Boolean).join(' ').trim();
+
+                                try {
+                                    job.logs.push('✨ Enhancing extracted frame with AI (color grade, text, filters)...');
+                                    const hfResult = await enhanceFrameWithHuggingFace(frameBuffer, frameEnhancementPrompt);
+                                    const cacheId = `thumb_frame_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+                                    generatedThumbnails.set(cacheId, { buffer: hfResult.buffer, contentType: 'image/jpeg' });
+                                    jsonResponse.thumbnailImageUrl = `/api/thumbnail-cache/${cacheId}`;
+                                    jsonResponse.thumbnailSource = 'video_frame_enhanced';
+                                    jsonResponse.thumbnailFrameInfo = {
+                                        timestamp: bestFrame.timestamp,
+                                        reason: bestFrame.reason,
+                                        overlayText: bestFrame.overlayText,
+                                        colorFilter: bestFrame.colorFilter
+                                    };
+                                    job.logs.push(`✅ Thumbnail created from real video frame (${bestFrame.timestamp}) + AI enhanced!`);
+                                    thumbnailGenerated = true;
+                                } catch (enhanceErr) {
+                                    // Frame extracted but HF enhance failed — serve raw frame instead
+                                    console.error('HF frame enhancement failed, serving raw frame:', enhanceErr.message);
+                                    job.logs.push('AI enhancement failed — serving extracted frame as thumbnail...');
+                                    const cacheId = `thumb_raw_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+                                    generatedThumbnails.set(cacheId, { buffer: frameBuffer, contentType: 'image/jpeg' });
+                                    jsonResponse.thumbnailImageUrl = `/api/thumbnail-cache/${cacheId}`;
+                                    jsonResponse.thumbnailSource = 'video_frame_raw';
+                                    jsonResponse.thumbnailFrameInfo = { timestamp: bestFrame.timestamp, reason: bestFrame.reason };
+                                    thumbnailGenerated = true;
+                                }
+                            } catch (frameErr) {
+                                // Frame extraction failed — fall through to pure AI generation
+                                try { if (fs.existsSync(framePath)) fs.unlinkSync(framePath); } catch(e) {}
+                                console.error('Frame extraction failed, falling back to AI generation:', frameErr.message);
+                                job.logs.push('Frame extraction failed — switching to AI thumbnail generation...');
+                            }
+                        }
+
+                        // ── PHASE 3: Pure AI generation (fallback or no good frame) ──
+                        if (!thumbnailGenerated) {
+                            try {
+                                job.logs.push('🎨 Generating AI thumbnail using Hugging Face...');
+                                const hfResult = await generateHuggingFaceThumbnail(enhancedPrompt);
+                                const cacheId = `thumb_ai_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+                                generatedThumbnails.set(cacheId, { buffer: hfResult.buffer, contentType: 'image/jpeg' });
+                                jsonResponse.thumbnailImageUrl = `/api/thumbnail-cache/${cacheId}`;
+                                jsonResponse.thumbnailSource = 'ai_generated';
+                                job.logs.push(`✅ AI thumbnail generated using ${hfResult.model}!`);
+                            } catch (hfError) {
+                                // Final fallback: Pollinations AI
+                                console.error('HF generation failed, falling back to Pollinations:', hfError.message);
+                                job.logs.push('Using backup thumbnail generator (Pollinations AI)...');
+                                const seed = Math.floor(Math.random() * 100000);
+                                jsonResponse.thumbnailImageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=${thumbnailSize.width}&height=${thumbnailSize.height}&nologo=true&enhance=true&safe=true&seed=${seed}`;
+                                jsonResponse.thumbnailSource = 'pollinations_fallback';
+                            }
                         }
                     }
+
 
                     job.logs.push('Analysis complete with VeerAlyze AI Engine!');
                     keySuccess = true;

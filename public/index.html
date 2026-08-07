@@ -783,11 +783,15 @@
 
                         <!-- TAB 9: UPLOAD STRATEGY -->
                         <div class="tab-panel" id="tab-upload">
-                            <div class="card panel-card" style="margin-bottom:1.5rem;">
-                                <h3><i class="fa-solid fa-wand-magic-sparkles"></i> AI Generated Thumbnail</h3>
-                                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.5rem;">Generated based on your video content to maximize CTR.</p>
+                        <div class="card panel-card" style="margin-bottom:1.5rem;">
+                                <h3><i class="fa-solid fa-wand-magic-sparkles"></i> Smart Thumbnail</h3>
+                                <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.75rem;">VeerAlyze scans your video for the best frame, then enhances it with AI. Falls back to full AI generation if no great moment is found.</p>
+
+                                <!-- Source badge — updated by JS -->
+                                <div id="thumbnail-source-badge" style="display:none;align-items:center;gap:0.5rem;font-size:0.82rem;font-weight:600;padding:0.5rem 0.85rem;border-radius:8px;border:1px solid;margin-bottom:0.85rem;line-height:1.4;flex-wrap:wrap;"></div>
+
                                 <div class="thumbnail-preview-wrapper" id="thumbnail-wrapper" style="margin-bottom:1rem;">
-                                    <img id="thumbnail-img" src="" alt="AI Thumbnail" style="width:100%;border-radius:10px;display:block;">
+                                    <img id="thumbnail-img" src="" alt="Smart Thumbnail" style="width:100%;border-radius:10px;display:block;">
                                 </div>
                                 <div style="display:flex;gap:1rem;">
                                     <a id="thumbnail-download-link" href="" class="new-analysis-btn" style="flex:1;background:var(--primary-glow);border-color:var(--primary-glow);text-decoration:none;color:white;display:flex;align-items:center;justify-content:center;font-weight:600;">
@@ -798,6 +802,7 @@
                                     </a>
                                 </div>
                             </div>
+
                             <div class="card panel-card">
                                 <div class="strategy-row">
                                     <div class="strategy-col"><h4><i class="fa-solid fa-clock"></i> Best Time</h4><p id="strategy-time"></p></div>

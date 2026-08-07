@@ -1459,7 +1459,38 @@ document.addEventListener('DOMContentLoaded', () => {
             dlLink.href = `/api/download-thumbnail?url=${encodeURIComponent(data.thumbnailImageUrl)}`;
             dlLink.setAttribute('download', data.videoAspect === '9:16' ? 'yt_shorts_thumbnail.jpg' : 'yt_thumbnail.jpg');
             document.getElementById('thumbnail-external-link').href = data.thumbnailImageUrl;
+
+            // Show thumbnail source badge
+            const sourceBadge = document.getElementById('thumbnail-source-badge');
+            if (sourceBadge) {
+                const src = data.thumbnailSource || 'ai_generated';
+                if (src === 'video_frame_enhanced') {
+                    const fi = data.thumbnailFrameInfo || {};
+                    sourceBadge.innerHTML = `<i class="fa-solid fa-film"></i> Extracted from video at <strong>${fi.timestamp || ''}</strong> + AI Enhanced${fi.colorFilter ? ` · ${fi.colorFilter}` : ''}${fi.overlayText ? ` · Text: "${fi.overlayText}"` : ''}`;
+                    sourceBadge.style.background = 'rgba(74, 222, 128, 0.1)';
+                    sourceBadge.style.borderColor = 'rgba(74, 222, 128, 0.3)';
+                    sourceBadge.style.color = '#4ade80';
+                } else if (src === 'video_frame_raw') {
+                    const fi = data.thumbnailFrameInfo || {};
+                    sourceBadge.innerHTML = `<i class="fa-solid fa-film"></i> Real video frame at <strong>${fi.timestamp || ''}</strong>`;
+                    sourceBadge.style.background = 'rgba(74, 222, 128, 0.1)';
+                    sourceBadge.style.borderColor = 'rgba(74, 222, 128, 0.3)';
+                    sourceBadge.style.color = '#4ade80';
+                } else if (src === 'ai_generated') {
+                    sourceBadge.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> AI Generated (no great frame found in video)`;
+                    sourceBadge.style.background = 'rgba(168, 85, 247, 0.1)';
+                    sourceBadge.style.borderColor = 'rgba(168, 85, 247, 0.3)';
+                    sourceBadge.style.color = '#a855f7';
+                } else {
+                    sourceBadge.innerHTML = `<i class="fa-solid fa-image"></i> AI Generated`;
+                    sourceBadge.style.background = 'rgba(168, 85, 247, 0.1)';
+                    sourceBadge.style.borderColor = 'rgba(168, 85, 247, 0.3)';
+                    sourceBadge.style.color = '#a855f7';
+                }
+                sourceBadge.style.display = 'flex';
+            }
         }
+
         if (data.uploadStrategy) {
             setText('strategy-time', data.uploadStrategy.bestTime);
             setText('strategy-audience', data.uploadStrategy.audienceTarget);
