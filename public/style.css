@@ -2,9 +2,9 @@
 
 /* Global Custom Variables */
 :root {
-    --bg-main: #06070a;
-    --bg-card: #12131a;
-    --border-color: #1e2030;
+    --bg-main: #090415;
+    --bg-card: #130b29;
+    --border-color: #24164a;
     --border-glow: rgba(139, 92, 246, 0.4);
     
     --primary-glow: #8b5cf6;
@@ -13,14 +13,14 @@
     --accent-blue: #06b6d4;
     
     --text-main: #f8fafc;
-    --text-muted: #94a3b8;
+    --text-muted: #a7a2c4;
     --text-dark: #0f172a;
     
     --font-heading: 'Outfit', 'Space Grotesk', sans-serif;
     --font-body: 'Plus Jakarta Sans', sans-serif;
     
     --transition-smooth: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    --shadow-premium: 0 20px 50px rgba(0, 0, 0, 0.65), 0 0 1px rgba(255, 255, 255, 0.1) inset;
+    --shadow-premium: 0 20px 50px rgba(0, 0, 0, 0.65), 0 0 1px rgba(139, 92, 246, 0.2) inset;
 }
 
 /* Reset and Core Styling */
@@ -32,7 +32,8 @@
 }
 
 body {
-    background: radial-gradient(circle at 15% 15%, #0c0822 0%, #05040a 60%, #010103 100%);
+    background: radial-gradient(circle at 15% 15%, #140833 0%, #090415 50%, #030108 100%);
+    background-color: var(--bg-main);
     color: var(--text-main);
     font-family: var(--font-body);
     min-height: 100vh;
