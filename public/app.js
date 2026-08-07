@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── FIREBASE AUTH SETUP ──────────────────────────────────────────────────
     const firebaseConfig = {
-        apiKey: "AIzaSyCBX8wkxvT8KrJLoRaJnujbLmA-n6SgG74",
+        apiKey: "AIzaSyCBX8wKxvT8KrJLORaJnujbLmA-n6SgG74",
         authDomain: "veeralyze.firebaseapp.com",
         projectId: "veeralyze",
         storageBucket: "veeralyze.firebasestorage.app",
