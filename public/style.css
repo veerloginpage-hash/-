@@ -5162,8 +5162,8 @@ body.results-mode .viral-score-item {
     min-height: 102px;
     padding: 0.7rem 0.4rem;
     border-radius: 16px;
-    background: rgba(255,255,255,0.045);
-    border: 1px solid rgba(255,255,255,0.08);
+    background: #141727;
+    border: 1px solid #23284b;
 }
 
 body.results-mode .vscore-ring {
@@ -5205,8 +5205,8 @@ body.results-mode .tab-btn {
     width: 100%;
     padding: 0.72rem 0.65rem;
     border-radius: 14px;
-    background: rgba(255,255,255,0.045);
-    border-color: rgba(255,255,255,0.08);
+    background: #111322;
+    border-color: #1a1e36;
     color: #bfcbda;
     font-size: 0.75rem;
     line-height: 1.1;
@@ -5285,9 +5285,9 @@ body.results-mode .chat-bubble {
 body.results-mode .feedback-text {
     padding: 0.95rem 1.05rem;
     border-radius: 16px;
-    background: rgba(255,255,255,0.045);
-    border: 1px solid rgba(255,255,255,0.075);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+    background: #141727;
+    border: 1px solid #23284b;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.01);
 }
 
 body.results-mode .divider {
@@ -5315,10 +5315,9 @@ body.results-mode .hook-card,
 body.results-mode .strategy-row > *,
 body.results-mode .thumbnail-concept-box {
     border-radius: 16px;
-    background:
-        linear-gradient(145deg, rgba(255,255,255,0.075), rgba(255,255,255,0.03));
-    border: 1px solid rgba(255,255,255,0.085);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+    background: #141727;
+    border: 1px solid #23284b;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.01);
 }
 
 body.results-mode .suggestions-list li {
@@ -5347,8 +5346,8 @@ body.results-mode .algo-stat {
     grid-template-columns: 116px 1fr 52px;
     padding: 0.7rem;
     border-radius: 14px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.06);
+    background: #141727;
+    border: 1px solid #23284b;
 }
 
 body.results-mode .stat-label,
@@ -5363,8 +5362,8 @@ body.results-mode .strategy-col h4 {
 
 body.results-mode .stat-bar-container {
     height: 10px;
-    border-color: rgba(255,255,255,0.1);
-    background: rgba(255,255,255,0.07);
+    border: 1px solid #23284b;
+    background: #080911;
 }
 
 body.results-mode .ctr-fill {
@@ -5508,10 +5507,9 @@ body.results-mode .thumb-score-circle {
 }
 
 body.results-mode .results-dashboard {
-    background:
-        linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.015)),
-        rgba(8, 7, 18, 0.88);
-    border-color: rgba(255,255,255,0.12);
+    background: #080911;
+    border: 1px solid #1a1e36;
+    box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.02);
 }
 
 body.results-mode .card,
@@ -5522,28 +5520,33 @@ body.results-mode .viral-score-widget,
 body.results-mode .algo-widget,
 body.results-mode .badge-widget,
 body.results-mode .quick-stats-widget {
-    background:
-        linear-gradient(145deg, rgba(255,255,255,0.13), rgba(255,255,255,0.055)),
-        rgba(9, 16, 28, 0.88);
-    border-color: rgba(255,255,255,0.15);
+    background: #0e111d;
+    border: 1px solid #1f2544;
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+body.results-mode .card:hover,
+body.results-mode .panel-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(139, 92, 246, 0.5) !important;
+    box-shadow: 0 24px 60px rgba(139, 92, 246, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 body.results-mode .tabs-nav {
-    background:
-        linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06)),
-        rgba(8, 15, 26, 0.92);
+    background: #090a12;
+    border: 1px solid #1a1e36;
 }
 
 body.results-mode #main-tabs-nav .tab-btn,
 body.results-mode .tab-btn {
-    background: rgba(255,255,255,0.085);
-    border-color: rgba(255,255,255,0.14);
-    color: #dbeafe;
+    background: #111322;
+    border-color: #1a1e36;
+    color: #94a3b8;
 }
 
 body.results-mode .tab-btn.active {
-    color: #031018;
-    background: linear-gradient(135deg, #ccfbf1 0%, #67e8f9 52%, #f5d0fe 100%);
+    color: #ffffff;
+    background: linear-gradient(135deg, #7c3aed 0%, #db2777 100%);
 }
 
 body.results-mode .feedback-text,
@@ -5571,26 +5574,25 @@ body.results-mode .storytelling-part,
 body.results-mode .hook-card,
 body.results-mode .strategy-row > *,
 body.results-mode .thumbnail-concept-box {
-    background:
-        linear-gradient(145deg, rgba(255,255,255,0.105), rgba(255,255,255,0.045));
-    border-color: rgba(255,255,255,0.13);
+    background: #141727;
+    border: 1px solid #23284b;
 }
 
 body.results-mode #main-tabs-nav .tab-btn.active,
 body.results-mode .tabs-nav .tab-btn.active,
 body.results-mode button.tab-btn.active {
-    color: #031018 !important;
-    background: linear-gradient(135deg, #ccfbf1 0%, #67e8f9 52%, #f5d0fe 100%) !important;
-    border-color: rgba(255,255,255,0.5) !important;
+    color: #ffffff !important;
+    background: linear-gradient(135deg, #7c3aed 0%, #db2777 100%) !important;
+    border-color: rgba(255,255,255,0.2) !important;
     box-shadow:
-        0 14px 30px rgba(56,189,248,0.26),
-        inset 0 1px 0 rgba(255,255,255,0.7) !important;
+        0 14px 30px rgba(124,58,237,0.3),
+        inset 0 1px 0 rgba(255,255,255,0.15) !important;
 }
 
 body.results-mode #main-tabs-nav .tab-btn.active i,
 body.results-mode .tabs-nav .tab-btn.active i,
 body.results-mode button.tab-btn.active i {
-    color: #031018 !important;
+    color: #ffffff !important;
 }
 
 /* ── ULTIMATE PREMIUM CREATOR VIBE STYLING OVERRIDES ── */
@@ -5641,16 +5643,17 @@ body.results-mode ul li {
     border-radius: 12px !important;
     line-height: 1.6 !important;
     font-size: 0.94rem !important;
-    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid #23284b !important;
     transition: var(--transition-smooth) !important;
     color: #f8fafc !important;
+    background: #141727 !important;
 }
 
 body.results-mode .suggestions-list li:hover,
 body.results-mode .checklist li:hover,
 body.results-mode ul li:hover {
-    border-color: rgba(139, 92, 246, 0.3) !important;
-    background: rgba(255, 255, 255, 0.03) !important;
+    border-color: rgba(139, 92, 246, 0.5) !important;
+    background: #1c1f36 !important;
     transform: translateX(4px);
 }
 
@@ -5707,14 +5710,14 @@ body.results-mode .title-option-box {
     padding: 18px !important;
     border-radius: 16px !important;
     margin-bottom: 12px !important;
-    border: 1px solid rgba(255, 255, 255, 0.08) !important;
-    background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01)) !important;
+    border: 1px solid #23284b !important;
+    background: #141727 !important;
     transition: var(--transition-smooth) !important;
 }
 body.results-mode .title-option-box:hover {
-    border-color: rgba(6, 182, 212, 0.4) !important;
-    background: rgba(255, 255, 255, 0.04) !important;
-    box-shadow: 0 10px 25px -5px rgba(6, 182, 212, 0.15) !important;
+    border-color: rgba(6, 182, 212, 0.6) !important;
+    background: #1a1e35 !important;
+    box-shadow: 0 10px 25px -5px rgba(6, 182, 212, 0.25) !important;
 }
 
 /* Glowing Neon Header Badge */
@@ -5728,8 +5731,8 @@ body.results-mode .title-option-box:hover {
 body.results-mode .tabs-nav {
     border-radius: 24px !important;
     padding: 8px !important;
-    border: 1px solid rgba(255, 255, 255, 0.12) !important;
-    background: rgba(10, 11, 20, 0.8) !important;
+    border: 1px solid #1a1e36 !important;
+    background: #090a12 !important;
     box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.9) !important;
 }
 
@@ -5737,8 +5740,8 @@ body.results-mode #main-tabs-nav .tab-btn,
 body.results-mode .tab-btn {
     border-radius: 16px !important;
     padding: 10px 18px !important;
-    border: 1px solid transparent !important;
-    background: transparent !important;
+    border: 1px solid #1a1e36 !important;
+    background: #111322 !important;
     color: #94a3b8 !important;
     font-family: var(--font-heading) !important;
     font-size: 0.9rem !important;
@@ -5749,8 +5752,8 @@ body.results-mode .tab-btn {
 body.results-mode #main-tabs-nav .tab-btn:hover,
 body.results-mode .tab-btn:hover {
     color: #ffffff !important;
-    background: rgba(255, 255, 255, 0.05) !important;
-    border-color: rgba(255, 255, 255, 0.08) !important;
+    background: #1a1e38 !important;
+    border-color: #2b305c !important;
 }
 
 body.results-mode #main-tabs-nav .tab-btn.active,
