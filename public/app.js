@@ -74,12 +74,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const authModalOverlay = document.getElementById('auth-modal-overlay');
         const authModalClose   = document.getElementById('auth-modal-close');
-        const authForm         = document.getElementById('auth-form');
-        const authEmail        = document.getElementById('auth-email');
-        const authPassword     = document.getElementById('auth-password');
-        const authToggleBtn    = document.getElementById('auth-toggle-btn');
-        const authToggleText   = document.getElementById('auth-toggle-text');
-        const authModalDesc    = document.getElementById('auth-modal-desc');
         const authErrorMsg     = document.getElementById('auth-error-msg');
         const googleAuthBtn    = document.getElementById('google-auth-btn');
 
@@ -92,50 +86,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.target === authModalOverlay) {
                 authModalOverlay.classList.add('hidden');
                 if (authErrorMsg) authErrorMsg.style.display = 'none';
-            }
-        });
-
-        authToggleBtn?.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (authErrorMsg) authErrorMsg.style.display = 'none';
-            if (authMode === 'login') {
-                authMode = 'signup';
-                if (authToggleText) authToggleText.textContent = "Already have an account?";
-                if (authToggleBtn) authToggleBtn.textContent = "Sign In";
-                if (authModalDesc) authModalDesc.textContent = "Create an account to start saving video analytics reports.";
-                const submitBtn = authForm?.querySelector('button[type="submit"]');
-                if (submitBtn) submitBtn.textContent = "Sign Up";
-            } else {
-                authMode = 'login';
-                if (authToggleText) authToggleText.textContent = "Don't have an account?";
-                if (authToggleBtn) authToggleBtn.textContent = "Sign Up";
-                if (authModalDesc) authModalDesc.textContent = "Access history, dashboard analytics, and creator features.";
-                const submitBtn = authForm?.querySelector('button[type="submit"]');
-                if (submitBtn) submitBtn.textContent = "Sign In";
-            }
-        });
-
-        authForm?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!firebase.auth) return;
-            const email = authEmail?.value;
-            const password = authPassword?.value;
-            if (authErrorMsg) authErrorMsg.style.display = 'none';
-
-            try {
-                if (authMode === 'login') {
-                    await firebase.auth().signInWithEmailAndPassword(email, password);
-                } else {
-                    await firebase.auth().createUserWithEmailAndPassword(email, password);
-                }
-                authModalOverlay?.classList.add('hidden');
-                authForm.reset();
-            } catch (err) {
-                console.error("Auth error:", err);
-                if (authErrorMsg) {
-                    authErrorMsg.textContent = err.message || "An authentication error occurred.";
-                    authErrorMsg.style.display = 'block';
-                }
             }
         });
 
