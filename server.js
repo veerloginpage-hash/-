@@ -600,6 +600,7 @@ app.get('/api/job/:jobId/stream', (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering on Render
 
     let sendIndex = 0;
     const timer = setInterval(() => {
@@ -610,6 +611,9 @@ app.get('/api/job/:jobId/stream', (req, res) => {
                 res.write(`data: ${JSON.stringify({ log: currentLogs[i], progress: jobs[jobId].progress, status: jobs[jobId].status })}\n\n`);
             }
             sendIndex = currentLogs.length;
+        } else {
+            // Send keepalive comment to prevent proxy timeout
+            res.write(`: keepalive\n\n`);
         }
         if (jobs[jobId].status === 'completed' || jobs[jobId].status === 'failed') {
             res.write(`data: ${JSON.stringify({ type: 'done', status: jobs[jobId].status, result: jobs[jobId].result, videoPath: jobs[jobId].videoPath })}\n\n`);
@@ -618,8 +622,21 @@ app.get('/api/job/:jobId/stream', (req, res) => {
         }
     }, 300);
 
-    req.on('close', () => clearInterval(timer));
+    // Additional keepalive every 20 seconds for Render.com proxy
+    const keepAliveTimer = setInterval(() => {
+        if (!res.writableEnded) {
+            res.write(`: ping\n\n`);
+        } else {
+            clearInterval(keepAliveTimer);
+        }
+    }, 20000);
+
+    req.on('close', () => {
+        clearInterval(timer);
+        clearInterval(keepAliveTimer);
+    });
 });
+
 
 
 
