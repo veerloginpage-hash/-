@@ -68,6 +68,7 @@ const uploadImage = multer({ storage: imageStorage, limits: { fileSize: 10 * 102
 
 // In-memory job tracking (stores full result for chat context)
 const jobs = {};
+const generatedThumbnails = new Map();
 let youtubeAuthState = null;
 let youtubeTokenStore = null;
 let youtubeChannelCache = null;
@@ -275,6 +276,44 @@ function buildThumbnailPrompt(basePrompt, aspect) {
     ].join(' ');
 }
 
+async function generateHuggingFaceThumbnail(prompt) {
+    const hfKey = process.env.HUGGINGFACE_API_KEY;
+    if (!hfKey) {
+        throw new Error('Hugging Face API key is not configured in environment variables.');
+    }
+    const models = [
+        "black-forest-labs/FLUX.1-schnell",
+        "stabilityai/stable-diffusion-xl-base-1.0"
+    ];
+
+    let lastError = null;
+    for (const model of models) {
+        try {
+            const url = `https://api-inference.huggingface.co/models/${model}`;
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${hfKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ inputs: prompt })
+            });
+
+            if (res.ok) {
+                const buffer = Buffer.from(await res.arrayBuffer());
+                return { buffer, model };
+            } else {
+                const errText = await res.text().catch(() => '');
+                throw new Error(`Status ${res.status}: ${errText}`);
+            }
+        } catch (err) {
+            lastError = err;
+            console.error(`Hugging Face ${model} failed:`, err.message);
+        }
+    }
+    throw lastError || new Error('All Hugging Face models failed.');
+}
+
 function escapeHtml(value = '') {
     return String(value)
         .replace(/&/g, '&amp;')
@@ -447,14 +486,34 @@ app.get('/api/download-thumbnail', async (req, res) => {
     const imageUrl = req.query.url;
     if (!imageUrl) return res.status(400).send('Missing URL.');
     try {
+        if (imageUrl.includes('/api/thumbnail-cache/')) {
+            const cacheId = imageUrl.split('/').pop();
+            const item = generatedThumbnails.get(cacheId);
+            if (!item) return res.status(404).send('Cached thumbnail not found.');
+            res.setHeader('Content-Disposition', 'attachment; filename="youtube_thumbnail.jpg"');
+            res.setHeader('Content-Type', item.contentType || 'image/jpeg');
+            return res.send(item.buffer);
+        }
+
         const imageRes = await fetch(imageUrl);
         if (!imageRes.ok) throw new Error('Failed to fetch image.');
         res.setHeader('Content-Disposition', 'attachment; filename="youtube_thumbnail.jpg"');
         res.setHeader('Content-Type', 'image/jpeg');
         res.send(Buffer.from(await imageRes.arrayBuffer()));
     } catch (err) {
+        console.error('Error downloading image:', err.message);
         res.status(500).send('Error downloading image.');
     }
+});
+
+app.get('/api/thumbnail-cache/:id', (req, res) => {
+    const id = req.params.id;
+    const item = generatedThumbnails.get(id);
+    if (!item) {
+        return res.status(404).send('Thumbnail not found in cache.');
+    }
+    res.setHeader('Content-Type', item.contentType || 'image/jpeg');
+    res.send(item.buffer);
 });
 
 // ─────────────────────────────────────────────────────────────
@@ -1297,10 +1356,24 @@ Follow this exact structure:
                             .replace(/[^\x20-\x7E]/g, ' ')
                             .replace(/\s+/g, ' ')
                             .trim();
-                        const seed = Math.floor(Math.random() * 100000);
-                        jsonResponse.thumbnailImageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=${thumbnailSize.width}&height=${thumbnailSize.height}&nologo=true&enhance=true&safe=true&seed=${seed}`;
+                        
                         jsonResponse.videoAspect = thumbnailSize.aspect;
                         jsonResponse.thumbnailSize = { width: thumbnailSize.width, height: thumbnailSize.height };
+
+                        try {
+                            job.logs.push('Generating high-quality thumbnail using Hugging Face...');
+                            const hfResult = await generateHuggingFaceThumbnail(enhancedPrompt);
+                            const cacheId = `thumb_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+                            generatedThumbnails.set(cacheId, { buffer: hfResult.buffer, contentType: 'image/jpeg' });
+                            
+                            jsonResponse.thumbnailImageUrl = `/api/thumbnail-cache/${cacheId}`;
+                            job.logs.push(`Hugging Face thumbnail generated successfully using ${hfResult.model}!`);
+                        } catch (hfError) {
+                            console.error('Hugging Face generation failed, falling back to Pollinations:', hfError.message);
+                            job.logs.push('Hugging Face failed or busy, using backup thumbnail generator...');
+                            const seed = Math.floor(Math.random() * 100000);
+                            jsonResponse.thumbnailImageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?width=${thumbnailSize.width}&height=${thumbnailSize.height}&nologo=true&enhance=true&safe=true&seed=${seed}`;
+                        }
                     }
 
                     job.logs.push('Analysis complete with VeerAlyze AI Engine!');
